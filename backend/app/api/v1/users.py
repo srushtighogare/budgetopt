@@ -31,7 +31,7 @@ async def create_user(
     if body.team_id is not None:
         await get_accessible_team(body.team_id, user, db, action="create_user")
     elif body.role != Role.ORG_ADMIN:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Non-admin users need a team")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Non-admin users need a team")
 
     email = body.email.lower()
     if await db.scalar(select(User.id).where(User.email == email)):

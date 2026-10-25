@@ -8,15 +8,17 @@ Denied access attempts are recorded in `audit_events`.
 """
 
 from collections.abc import Callable, Coroutine
+from datetime import UTC, datetime
 from typing import Any
 
 import jwt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, OAuth2PasswordBearer
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import decode_token
-from app.db.models import AuditEvent, Role, Team, User
+from app.core.security import API_KEY_PREFIX, decode_token, hash_api_key
+from app.db.models import ApiKey, AuditEvent, Role, Team, User
 from app.db.session import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -83,3 +85,24 @@ async def get_accessible_team(
         await db.commit()
         raise HTTPException(status.HTTP_403_FORBIDDEN, "You do not have access to this team")
     return team
+
+
+# --- Gateway callers (applications using an API key) ---
+
+api_key_scheme = HTTPBearer(auto_error=False)
+
+
+async def get_api_key(
+    creds: HTTPAuthorizationCredentials | None = Depends(api_key_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> ApiKey:
+    if creds is None or not creds.credentials.startswith(API_KEY_PREFIX):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing or invalid API key",
+                            headers={"WWW-Authenticate": "Bearer"})
+    key = await db.scalar(select(ApiKey).where(ApiKey.key_hash == hash_api_key(creds.credentials)))
+    if key is None or not key.is_active:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing or invalid API key",
+                            headers={"WWW-Authenticate": "Bearer"})
+    key.last_used_at = datetime.now(UTC)
+    await db.commit()
+    return key

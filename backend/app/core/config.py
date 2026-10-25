@@ -25,8 +25,12 @@ class Settings(BaseSettings):
     fernet_key: str = ""
     cors_origins: list[str] = ["http://localhost:5173"]
 
-    # Request validation
+    # Gateway
     max_prompt_chars: int = 32_000
+    default_max_tokens: int = 1024
+    rate_limit_per_minute: int = 60
+    cache_ttl_s: int = 86_400
+    provider_timeout_s: float = 60.0
 
     # Provider credentials (copied, encrypted, into `providers` by the seed script)
     groq_api_key: str = ""

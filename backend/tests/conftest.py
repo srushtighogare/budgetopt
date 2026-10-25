@@ -7,6 +7,7 @@ os.environ["DATABASE_URL"] = os.environ.get(
     "TEST_DATABASE_URL",
     "postgresql+asyncpg://budgetopt:budgetopt@localhost:5433/budgetopt_test",
 )
+os.environ["REDIS_URL"] = os.environ.get("TEST_REDIS_URL", "redis://localhost:6380/15")
 os.environ.setdefault("FERNET_KEY", "TlUtFm5JnEXw2b0iY4Yqk0ZfVxH0lH0nZ8j3w3G0p3Q=")
 
 from collections.abc import AsyncIterator  # noqa: E402
@@ -17,6 +18,7 @@ from sqlalchemy import select, text  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
 
 from app.core.config import get_settings  # noqa: E402
+from app.core.redis import get_redis  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
 from app.db.models import Base, Organization, Role, Team, User  # noqa: E402
 from app.db.session import SessionLocal, engine  # noqa: E402
@@ -34,6 +36,7 @@ async def clean_db() -> AsyncIterator[None]:
         await conn.run_sync(Base.metadata.create_all)
     async with SessionLocal() as db:
         await seed(db)
+    await get_redis().flushdb()
     yield
 
 

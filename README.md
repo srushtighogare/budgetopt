@@ -13,8 +13,8 @@ The full design and the build roadmap are in [docs/plan.md](docs/plan.md).
 |---|---|---|
 | 1 | Foundation: FastAPI, PostgreSQL schema + Alembic, JWT auth, RBAC, teams, API keys, model and versioned pricing registry, audit log, CI | **Done** |
 | 2 | Provider adapters (Groq, Gemini, OpenAI, Anthropic), fallback executor, circuit breaker | **Done** |
-| 3 | OpenAI-compatible gateway, request and decision logging, exact cache, rate limits | Next |
-| 4 | Workload analysis ML: task classifier, complexity model, token estimator | Planned |
+| 3 | OpenAI-compatible gateway, request and decision logging, exact cache, rate limits, PII redaction | **Done** |
+| 4 | Workload analysis ML: task classifier, complexity model, token estimator | Next |
 | 5 | Model profiling: LLM-as-judge quality, latency tracking | Planned |
 | 6 | Optimizer: NSGA-II and ILP allocation, constraint filter, explanations | Planned |
 | 7–9 | Forecasting, anomaly detection, what-if simulator, semantic cache | Planned |
@@ -39,9 +39,23 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 
 The API docs are at http://localhost:8000/docs. Log in with `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`.
 
+## Using the gateway from an application
+
+Create a team API key (`POST /api/v1/teams/{id}/api-keys`), then point any OpenAI SDK at BudgetOpt:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8000/v1", api_key="bo_...")
+r = client.chat.completions.create(model="auto", messages=[{"role": "user", "content": "Hi"}])
+print(r.model_extra["budgetopt"])  # cost, savings vs baseline, budget state, explanation
+```
+
+`model="auto"` lets BudgetOpt choose the model. A registered model name requests that model, and the other eligible models serve as fallbacks. Over-budget teams get `402`, rate-limited callers get `429`, and every request appears in `GET /api/v1/requests` with an explanation of the routing decision.
+
 ## Tests
 
-Tests run against a real PostgreSQL database, `budgetopt_test`:
+Tests run against a real PostgreSQL database (`budgetopt_test`) and Redis (db 15):
 
 ```bash
 docker compose exec postgres psql -U budgetopt -c "CREATE DATABASE budgetopt_test"
@@ -53,12 +67,13 @@ cd backend && .venv/bin/pytest
 ```
 backend/
   app/
-    api/v1/      REST endpoints (auth, users, teams, models, providers)
+    api/v1/      REST endpoints (auth, users, teams, models, providers, requests,
+                 gateway incl. OpenAI-compatible /v1/chat/completions)
     core/        settings, security (argon2, JWT, Fernet), RBAC dependencies
     db/          ORM schema and session
     schemas/     request/response models
-    services/    pricing, budget, providers/ (LLM adapters), routing/ (fallback executor,
-                 circuit breaker); more modules land here per phase
+    services/    pricing, budget, cache, rate_limit, privacy, tokens, providers/ (LLM
+                 adapters), routing/ (router, pipeline, fallback executor, breaker)
     seed.py      demo org, teams, admin, providers, models
   migrations/    Alembic migrations
   tests/

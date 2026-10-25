@@ -291,7 +291,8 @@ class RoutingDecision(TimestampMixin, Base):
     request_id: Mapped[int] = mapped_column(ForeignKey("requests.id"), unique=True)
     policy_id: Mapped[int | None] = mapped_column(ForeignKey("allocation_policies.id"))
     budget_state: Mapped[str] = mapped_column(String(20))
-    candidates: Mapped[list[Any]]  # [{model_id, est_cost, quality, latency, rejected_reason}]
+    # {"strategy": str, "considered": [{model_id, est_cost, rejected_reason}], "attempts": [...]}
+    candidates: Mapped[dict[str, Any]]
     fallback_used: Mapped[bool] = mapped_column(Boolean, default=False)
     baseline_model_id: Mapped[int | None] = mapped_column(ForeignKey("llm_models.id"))
     baseline_cost: Mapped[Decimal | None] = mapped_column(Money)

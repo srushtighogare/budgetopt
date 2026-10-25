@@ -64,7 +64,7 @@ async def create_model(
 ) -> LLMModelOut:
     provider = await db.scalar(select(Provider).where(Provider.name == body.provider))
     if provider is None:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Unknown provider")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Unknown provider")
     dup = await db.scalar(
         select(LLMModel.id).where(LLMModel.provider_id == provider.id, LLMModel.name == body.name)
     )
