@@ -1,0 +1,30 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Databases / local data
+*.db
+*.sqlite3
+
+# ML artifacts (large)
+ml/artifacts/
+ml/datasets/raw/
+
+# Node
+node_modules/
+dist/
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
