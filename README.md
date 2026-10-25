@@ -12,8 +12,8 @@ The full design and the build roadmap are in [docs/plan.md](docs/plan.md).
 | Phase | Scope | State |
 |---|---|---|
 | 1 | Foundation: FastAPI, PostgreSQL schema + Alembic, JWT auth, RBAC, teams, API keys, model and versioned pricing registry, audit log, CI | **Done** |
-| 2 | Provider adapters (Groq, Gemini, OpenAI, Anthropic), fallback executor | Next |
-| 3 | OpenAI-compatible gateway, request and decision logging, exact cache, rate limits | Planned |
+| 2 | Provider adapters (Groq, Gemini, OpenAI, Anthropic), fallback executor, circuit breaker | **Done** |
+| 3 | OpenAI-compatible gateway, request and decision logging, exact cache, rate limits | Next |
 | 4 | Workload analysis ML: task classifier, complexity model, token estimator | Planned |
 | 5 | Model profiling: LLM-as-judge quality, latency tracking | Planned |
 | 6 | Optimizer: NSGA-II and ILP allocation, constraint filter, explanations | Planned |
@@ -53,11 +53,12 @@ cd backend && .venv/bin/pytest
 ```
 backend/
   app/
-    api/v1/      REST endpoints (auth, users, teams, models)
+    api/v1/      REST endpoints (auth, users, teams, models, providers)
     core/        settings, security (argon2, JWT, Fernet), RBAC dependencies
     db/          ORM schema and session
     schemas/     request/response models
-    services/    pricing, budget (more modules land here per phase)
+    services/    pricing, budget, providers/ (LLM adapters), routing/ (fallback executor,
+                 circuit breaker); more modules land here per phase
     seed.py      demo org, teams, admin, providers, models
   migrations/    Alembic migrations
   tests/

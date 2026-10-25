@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import auth, models, teams, users
+from app.api.v1 import auth, models, providers, teams, users
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for r in (auth.router, users.router, teams.router, models.router):
+for r in (auth.router, users.router, teams.router, models.router, providers.router):
     app.include_router(r, prefix="/api/v1")
 
 
