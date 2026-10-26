@@ -55,7 +55,8 @@ def _summary(run: OptimizationRun) -> dict:
         "id": run.id, "team_id": run.team_id, "method": run.method,
         "created_at": run.created_at, "points": len(front), "selected_index": run.selected_index,
         "presets": {k: {"index": i, **{m: front[i][m] for m in
-                                       ("monthly_cost", "quality", "latency_ms")}}
+                                       ("monthly_cost", "quality", "latency_ms")},
+                        "feasible": front[i].get("feasible", True)}
                     for k, i in presets.items() if i < len(front)},
         "baselines": run.inputs.get("baselines", []),
         "metrics": run.inputs.get("metrics", {}),

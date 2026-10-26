@@ -268,3 +268,11 @@ async def test_ilp_run_and_permissions(client, admin_headers, db):
     bad = await client.post(f"/api/v1/optimization/runs/{r.json()['id']}/apply",
                             headers=admin_headers, json={"team_id": 1})
     assert bad.status_code == 422
+
+
+async def test_infeasible_budget_is_explained(client, admin_headers, db):
+    await _seed_profiles(db)
+    r = (await client.post("/api/v1/optimization/runs", headers=admin_headers, json={
+        "monthly_requests": 1_000_000, "budget": 0.5, "pop_size": 20, "generations": 10})).json()
+    assert r["presets"]["cost_saver"]["feasible"] is False
+    assert any("cannot cover 1,000,000 requests" in n for n in r["notes"])

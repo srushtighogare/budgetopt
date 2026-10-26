@@ -73,6 +73,11 @@ def _compute(inp: OptimizationInputs, p: RunParams) -> dict:
     """CPU-bound part, run in a worker thread."""
     if p.method == "nsga2":
         front = nsga2.optimize(inp, pop_size=p.pop_size, generations=p.generations)
+        if inp.budget and not front.solutions[0].feasible:
+            inp.notes.append(
+                f"Budget ${inp.budget:,.2f}/month cannot cover {inp.monthly_requests:,} requests "
+                f"within the quality floors; the cheapest compliant allocation costs "
+                f"${front.solutions[0].monthly_cost:,.2f}/month (shown, marked infeasible).")
         points = [_point(inp, s.allocation, s.monthly_cost, s.quality, s.latency_ms,
                          feasible=s.feasible) for s in front.solutions]
         return {"points": points, "presets": front.presets,
