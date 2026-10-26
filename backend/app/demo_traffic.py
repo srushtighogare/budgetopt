@@ -3,7 +3,9 @@
 Creates (or resets) a separate team, "Demo (synthetic traffic)", so real teams'
 data is never touched, and fills it with ~6 weeks of requests:
   - weekday/weekend pattern and steady growth
-  - a realistic task mix, priced with each model's real current pricing
+  - a realistic task mix, priced with each model's real current pricing, routed mostly
+    to cheaper models (as BudgetOpt would) with a routing decision and savings vs the
+    priciest-model baseline on every row, and ~5% cache hits
   - one API key whose usage spikes in the last complete hour (for the anomaly demo)
 
 Every row is marked synthetic (prompt hash of "synthetic-demo").
@@ -85,22 +87,37 @@ async def generate(days: int, budget: float | None = None, seed: int = 42) -> di
         now = datetime.now(UTC)
         pricing = {m.id: next(p for p in m.pricing if p.effective_from <= now) for m in models}
         tasks, probs = list(TASK_MIX), np.array(list(TASK_MIX.values()))
+        unit = np.array([float(pricing[m.id].input_per_1m + 3 * pricing[m.id].output_per_1m)
+                         for m in models])
+        pick = (1 / unit) / (1 / unit).sum()  # cheaper models get more traffic
+        priciest = models[int(np.argmax(unit))]
 
         def add_request(ts: datetime, key: ApiKey) -> Decimal:
             task = tasks[rng.choice(len(tasks), p=probs)]
             band = rng.choice(["low", "medium", "high"], p=[0.5, 0.35, 0.15])
-            model = models[rng.integers(len(models))]
+            model = models[rng.choice(len(models), p=pick)]
             tin = int(rng.lognormal(np.log(200), 0.6))
             tout = int(rng.lognormal(np.log(OUT_TOKENS[task]), 0.5))
-            cost = compute_cost(pricing[model.id], tin, tout)
-            db.add(Request(team_id=team.id, api_key_id=key.id, prompt_hash=SYNTHETIC_HASH,
-                           task_type=TaskType(task), complexity_band=ComplexityBand(band),
-                           complexity={"low": 0.2, "medium": 0.5, "high": 0.8}[band],
-                           est_input_tokens=tin, est_output_tokens=tout, model_id=model.id,
-                           input_tokens=tin, output_tokens=tout, cost=cost,
-                           latency_ms=float(rng.lognormal(np.log(1200), 0.4)),
-                           status=RequestStatus.SUCCESS, created_at=ts))
-            return cost
+            full = compute_cost(pricing[model.id], tin, tout)
+            baseline = compute_cost(pricing[priciest.id], tin, tout)
+            cached = rng.random() < 0.05
+            req = Request(team_id=team.id, api_key_id=key.id, prompt_hash=SYNTHETIC_HASH,
+                          task_type=TaskType(task), complexity_band=ComplexityBand(band),
+                          complexity={"low": 0.2, "medium": 0.5, "high": 0.8}[band],
+                          est_input_tokens=tin, est_output_tokens=tout, model_id=model.id,
+                          input_tokens=0 if cached else tin, output_tokens=0 if cached else tout,
+                          cost=Decimal(0) if cached else full,
+                          latency_ms=None if cached else float(rng.lognormal(np.log(1200), 0.4)),
+                          status=RequestStatus.CACHE_HIT if cached else RequestStatus.SUCCESS,
+                          created_at=ts)
+            req.decision = RoutingDecision(
+                budget_state="ok", candidates={"synthetic": True}, created_at=ts,
+                baseline_model_id=priciest.id,
+                baseline_cost=full if cached else baseline,
+                savings=full if cached else baseline - full,
+                explanation="Synthetic demo request" + (" (cache hit)" if cached else "."))
+            db.add(req)
+            return req.cost
 
         n, total = 0, Decimal(0)
         start = (now - timedelta(days=days)).replace(hour=0, minute=0, second=0, microsecond=0)

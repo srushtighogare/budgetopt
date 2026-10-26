@@ -18,7 +18,8 @@ The full design and the build roadmap are in [docs/plan.md](docs/plan.md).
 | 5 | Model profiling: per-task quality via LLM judge + gold answers, latency percentiles | **Done** (profiles filling on free tiers) |
 | 6 | Optimizer: NSGA-II multi-objective allocation, exact ILP/LP, allocation policies used by the router | **Done** |
 | 7 | Spend forecasting (ETS, calibrated intervals), budget and overrun alerts, anomaly detection | **Done** |
-| 8–9 | What-if simulator, semantic cache | Next |
+| 8 | What-if simulator (replay history under other allocations, prices, volumes), savings and economic-feasibility report | **Done** |
+| 9 | Semantic cache | Next |
 | 10 | React dashboard | Planned |
 | 11 | Benchmark and evaluation | Planned |
 
@@ -109,6 +110,19 @@ crosses its alert threshold, the router switches to the team's `savings` policy.
   with 6 weeks of realistic usage, including one spike, so these features can be shown
   without real history.
 
+## What-if analysis and savings
+
+- `POST /api/v1/whatif` replays a team's logged requests from the last N days under up to 10
+  scenarios without calling any LLM. A scenario can be the actual allocation, the current
+  policy, the cheapest model meeting the quality floor, a single model, a saved policy or any
+  Pareto-front point, combined with per-model price changes and volume growth. Each scenario
+  reports cost, a monthly projection, whether it fits the budget, and expected quality and
+  latency. Output lengths are rescaled by each model's measured verbosity.
+- `GET /api/v1/reports/savings?platform_cost_per_month=…` reports realised spend against the
+  priciest-model baseline, split into routing and cache savings, by model, task and team, with
+  a daily series. Given the platform's own running cost it adds net monthly benefit and ROI,
+  which is the report's economic-feasibility test.
+
 ## Tests
 
 Tests run against a real PostgreSQL database (`budgetopt_test`) and Redis (db 15):
@@ -132,7 +146,7 @@ backend/
                  adapters), routing/ (router, pipeline, fallback executor, breaker),
                  workload/ (classifier, complexity, token estimates), profiling/,
                  optimizer/ (problem, NSGA-II, ILP/LP, policies), forecasting, alerts,
-                 anomaly, scheduler
+                 anomaly, scheduler, whatif, savings
     seed.py      demo org, teams, admin, providers, models
   migrations/    Alembic migrations
   tests/

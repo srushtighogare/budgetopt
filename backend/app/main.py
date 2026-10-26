@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1 import (
+    analysis,
     auth,
     gateway,
     models,
@@ -55,7 +56,7 @@ app.add_middleware(
 
 for r in (auth.router, users.router, teams.router, models.router, providers.router,
           requests.router, gateway.router, profiling.router, optimization.router,
-          monitoring.router):
+          monitoring.router, analysis.router):
     app.include_router(r, prefix="/api/v1")
 app.include_router(gateway.openai_router)
 
