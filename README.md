@@ -20,7 +20,7 @@ The full design and the build roadmap are in [docs/plan.md](docs/plan.md).
 | 7 | Spend forecasting (ETS, calibrated intervals), budget and overrun alerts, anomaly detection | **Done** |
 | 8 | What-if simulator (replay history under other allocations, prices, volumes), savings and economic-feasibility report | **Done** |
 | 9 | Semantic cache: local embeddings + pgvector, LLM-verified grey zone (precision 1.0, recall 96% on near-miss pairs) | **Done** |
-| 10 | React dashboard | Planned |
+| 10 | React dashboard: overview, playground, request log, forecast, alerts, optimization (Pareto front, apply policies), what-if, models & quality heatmap, teams/budgets/API keys | **Done** |
 | 11 | Benchmark and evaluation | Planned |
 
 ## Models
@@ -47,6 +47,29 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 ```
 
 The API docs are at http://localhost:8000/docs. Log in with `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`.
+
+## Dashboard
+
+```bash
+cd frontend
+npm install
+npm run dev          # http://localhost:5173, forwards /api and /v1 to the backend on :8000
+```
+
+Sign in with the seeded admin account. Run `python -m app.demo_traffic` in `backend/` first if
+you want history to look at: it creates a "Demo (synthetic traffic)" team, and the team switcher
+is in the header. Pages:
+
+- **Overview:** budget use, savings, forecast, spend by model and task
+- **Playground:** send a real request and see its routing explanation
+- **Request log:** every request with the full routing decision
+- **Forecast**, **Alerts**
+- **Optimization:** run NSGA-II/ILP, inspect the Pareto front, apply a policy
+- **What-if**
+- **Models:** prices, the quality heatmap, provider keys
+- **Teams & budgets:** budgets, API keys, members
+
+`docker compose up` also serves the built dashboard on port 5173, behind nginx.
 
 ## Using the gateway from an application
 
@@ -169,6 +192,7 @@ backend/
   migrations/    Alembic migrations
   tests/
 ml/              datasets, labelling job, training and evaluation scripts (see ml/README.md)
+frontend/        React + TypeScript dashboard (Vite, Tailwind, TanStack Query, Recharts)
 docs/            design plan, and later evaluation results
 docker-compose.yml
 ```

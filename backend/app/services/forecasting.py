@@ -144,6 +144,9 @@ def forecast_from_history(history: pd.Series, *, today: date, spent_today: float
     paths[0] = np.clip(paths[0] - spent_today, 0, None)
     totals = spent_to_date + calibrate(paths.sum(axis=0))
     mean_cum = spent_to_date + np.cumsum(paths.mean(axis=1))
+    # Cumulative spend percentiles per day (path-wise, calibrated): the honest month-to-date
+    # interval. Summing per-day percentiles would overstate it.
+    cum_paths = spent_to_date + np.apply_along_axis(calibrate, 1, np.cumsum(paths, axis=0))
 
     overrun_date = None
     if spent_to_date >= budget:
@@ -163,6 +166,8 @@ def forecast_from_history(history: pd.Series, *, today: date, spent_today: float
             "lower": round(float(np.percentile(paths[k], 5)), 6),
             "upper": round(float(np.percentile(paths[k], 95)), 6),
             "cumulative_mean": round(float(mean_cum[k]), 6),
+            "cumulative_lower": round(float(np.percentile(cum_paths[k], 5)), 6),
+            "cumulative_upper": round(float(np.percentile(cum_paths[k], 95)), 6),
         })
     return SpendForecast(
         method=method, period_start=start, period_end=end, spent_to_date=spent_to_date,
