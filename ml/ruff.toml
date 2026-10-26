@@ -1,1 +1,5 @@
 extend = "../backend/pyproject.toml"
+
+[lint.per-file-ignores]
+# Markdown tables in report templates are naturally long lines
+"build_report.py" = ["E501"]

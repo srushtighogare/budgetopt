@@ -163,3 +163,15 @@ async def test_profiling_api(client, admin_headers, monkeypatch):
     assert len(s["task_types"]) == 8 and s["quality_run_active"] is True
     assert (await client.post("/api/v1/profiling/latency/refresh",
                               headers=admin_headers)).json() == {"updated": 0}
+
+
+async def test_latency_ignores_synthetic_demo_rows(db):
+    from app.services.profiling.latency import SYNTHETIC_HASH
+
+    team = await db.scalar(select(Team).where(Team.name == "Engineering"))
+    model = await db.scalar(select(LLMModel).where(LLMModel.name == CHEAP))
+    for ms in (100, 200, 300, 400):
+        db.add(Request(team_id=team.id, prompt_hash=SYNTHETIC_HASH, model_id=model.id,
+                       task_type=TaskType.CODING, latency_ms=ms, status=RequestStatus.SUCCESS))
+    await db.commit()
+    assert await refresh_latency(db) == 0

@@ -6,6 +6,8 @@ Final-year project, Department of Computer Engineering, Vishwakarma Institute of
 BudgetOpt helps organizations control LLM spending. It classifies each AI workload by task type and complexity, estimates token usage, and allocates work across LLMs. Allocation uses multi-objective optimization (NSGA-II) over cost, quality and latency. BudgetOpt also enforces team budgets, forecasts spend and supports what-if analysis, and it explains every routing decision.
 
 The full design and the build roadmap are in [docs/plan.md](docs/plan.md).
+Evaluation results for every component (classifier, optimizer, forecasting, semantic cache,
+routing overhead, end-to-end benchmark) are collected in [docs/evaluation.md](docs/evaluation.md).
 
 ## Status
 
@@ -21,7 +23,7 @@ The full design and the build roadmap are in [docs/plan.md](docs/plan.md).
 | 8 | What-if simulator (replay history under other allocations, prices, volumes), savings and economic-feasibility report | **Done** |
 | 9 | Semantic cache: local embeddings + pgvector, LLM-verified grey zone (precision 1.0, recall 96% on near-miss pairs) | **Done** |
 | 10 | React dashboard: overview, playground, request log, forecast, alerts, optimization (Pareto front, apply policies), what-if, models & quality heatmap, teams/budgets/API keys | **Done** |
-| 11 | Benchmark and evaluation | Planned |
+| 11 | Benchmark and evaluation: response-matrix routing benchmark, optimizer vs exact optimum, forecaster, semantic cache, overhead load test, consolidated report | **In progress** (benchmark collecting on free tiers) |
 
 ## Models
 

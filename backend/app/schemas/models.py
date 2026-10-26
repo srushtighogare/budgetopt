@@ -7,8 +7,8 @@ from app.db.models import PrivacyTier, TaskType
 
 
 class PricingIn(BaseModel):
-    input_per_1m: Decimal = Field(ge=0, max_digits=14, decimal_places=8)
-    output_per_1m: Decimal = Field(ge=0, max_digits=14, decimal_places=8)
+    input_per_1m: Decimal = Field(ge=0, max_digits=18, decimal_places=8)
+    output_per_1m: Decimal = Field(ge=0, max_digits=18, decimal_places=8)
     effective_from: datetime | None = None  # defaults to now
 
 

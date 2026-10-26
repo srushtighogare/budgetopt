@@ -52,7 +52,7 @@ class UserOut(BaseModel):
 
 class TeamCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
-    monthly_budget: Decimal = Field(gt=0, max_digits=14, decimal_places=8)
+    monthly_budget: Decimal = Field(gt=0, max_digits=18, decimal_places=8)
     alert_threshold: float = Field(default=0.8, gt=0, lt=1)
     privacy_tier: PrivacyTier = PrivacyTier.PUBLIC
     store_prompts: bool = False
@@ -60,7 +60,7 @@ class TeamCreate(BaseModel):
 
 class TeamUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
-    monthly_budget: Decimal | None = Field(default=None, gt=0, max_digits=14, decimal_places=8)
+    monthly_budget: Decimal | None = Field(default=None, gt=0, max_digits=18, decimal_places=8)
     alert_threshold: float | None = Field(default=None, gt=0, lt=1)
     privacy_tier: PrivacyTier | None = None
     store_prompts: bool | None = None

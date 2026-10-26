@@ -1,6 +1,6 @@
 """ORM schema for BudgetOpt.
 
-Money is stored as Numeric(14, 8) USD so per-request costs of fractions of a cent
+Money is stored as Numeric(18, 8) USD so per-request costs of fractions of a cent
 are exact. Model prices are versioned (`model_pricing.effective_from`) so that
 historical request costs stay correct after a provider changes its pricing.
 """
@@ -30,7 +30,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-Money = Numeric(14, 8)
+Money = Numeric(18, 8)  # up to ~$10 billion, to 1e-8 USD
 JsonType = JSON().with_variant(JSONB(), "postgresql")
 
 
