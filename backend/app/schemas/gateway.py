@@ -63,6 +63,7 @@ class RouteResultOut(BaseModel):
     budget_state: str
     explanation: str
     attempts: list[dict]
+    workload: dict | None = None
 
 
 class RequestLogOut(BaseModel):

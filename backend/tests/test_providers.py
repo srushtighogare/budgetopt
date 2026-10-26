@@ -99,7 +99,7 @@ async def test_anthropic_format():
             "usage": {"input_tokens": 9, "output_tokens": 2},
         })
 
-    c = await AnthropicAdapter("sk-ant", mock_client(handler)).generate("claude-x", MSGS)
+    c = await AnthropicAdapter("sk-ant", mock_client(handler)).generate("anthropic-model-x", MSGS)
     assert seen["headers"]["x-api-key"] == "sk-ant"
     assert seen["headers"]["anthropic-version"] == "2023-06-01"
     assert seen["body"]["system"] == "Be brief."

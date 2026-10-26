@@ -25,9 +25,6 @@ from app.db.models import LLMModel, ModelPricing, PrivacyTier, Team
 from app.services.pricing import compute_cost
 
 AUTO = "auto"
-# Until the token estimator (phase 4) exists, assume this many output tokens
-# (capped by max_tokens) when comparing model costs before a call.
-DEFAULT_EST_OUTPUT_TOKENS = 300
 
 _PRIVACY_RANK = {PrivacyTier.PUBLIC: 0, PrivacyTier.INTERNAL: 1, PrivacyTier.CONFIDENTIAL: 2}
 
@@ -67,10 +64,13 @@ def _current_price(model: LLMModel, now: datetime) -> ModelPricing | None:
 
 
 async def plan_route(
-    db: AsyncSession, team: Team, route: str, est_input_tokens: int, max_tokens: int
+    db: AsyncSession, team: Team, route: str, est_input_tokens: int, est_output_tokens: int,
+    max_tokens: int,
 ) -> RoutingPlan:
+    """`est_*` come from workload analysis and drive cost estimates; `max_tokens`
+    (the hard output cap) drives the context-window check."""
     now = datetime.now(UTC)
-    est_output = min(max_tokens, DEFAULT_EST_OUTPUT_TOKENS)
+    est_output = est_output_tokens
     models = (await db.scalars(
         select(LLMModel)
         .options(selectinload(LLMModel.provider), selectinload(LLMModel.pricing))

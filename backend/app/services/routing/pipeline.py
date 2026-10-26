@@ -29,7 +29,7 @@ from app.services.providers.registry import AdapterFactory, build_adapter
 from app.services.routing.breaker import CircuitBreaker, default_breaker
 from app.services.routing.executor import Attempt, execute_with_fallback
 from app.services.routing.router import AUTO, RoutingPlan, plan_route
-from app.services.tokens import estimate_input_tokens
+from app.services.workload.analyzer import WorkloadProfile, analyze
 
 
 class UnknownModel(Exception):
@@ -64,6 +64,7 @@ class GatewayResult:
     latency_ms: float | None = None
     finish_reason: str = "stop"
     attempts: list[dict] = field(default_factory=list)
+    workload: dict | None = None
 
     @property
     def ok(self) -> bool:
@@ -87,12 +88,15 @@ async def _log(db: AsyncSession, req: GatewayRequest, *, status: RequestStatus,
                output_tokens: int | None = None, cost: Decimal = Decimal(0),
                latency_ms: float | None = None, baseline_cost: Decimal | None = None,
                savings: Decimal | None = None, attempts: list[dict] | None = None,
-               fallback_used: bool = False) -> int:
+               fallback_used: bool = False, profile: WorkloadProfile | None = None) -> int:
     row = Request(
         team_id=req.team.id, user_id=req.user_id, api_key_id=req.api_key_id,
         **_prompt_fields(req.team, req.messages),
-        est_input_tokens=plan.est_input_tokens if plan else None,
-        est_output_tokens=plan.est_output_tokens if plan else None,
+        task_type=profile.task_type if profile else None,
+        complexity=profile.complexity if profile else None,
+        complexity_band=profile.complexity_band if profile else None,
+        est_input_tokens=profile.est_input_tokens if profile else None,
+        est_output_tokens=profile.est_output_tokens if profile else None,
         model_id=model_id, input_tokens=input_tokens, output_tokens=output_tokens,
         cost=cost, latency_ms=latency_ms, status=status,
     )
@@ -101,7 +105,8 @@ async def _log(db: AsyncSession, req: GatewayRequest, *, status: RequestStatus,
     db.add(RoutingDecision(
         request_id=row.id, budget_state=budget_state,
         candidates={"considered": [c.as_dict() for c in plan.considered] if plan else [],
-                    "attempts": attempts or [], "strategy": plan.strategy if plan else None},
+                    "attempts": attempts or [], "strategy": plan.strategy if plan else None,
+                    "workload": _workload_dict(profile)},
         fallback_used=fallback_used,
         baseline_model_id=plan.baseline.id if plan and plan.baseline else None,
         baseline_cost=baseline_cost, savings=savings, explanation=explanation,
@@ -118,6 +123,16 @@ _FINISH = {"stop": "stop", "end_turn": "stop", "STOP": "stop", "stop_sequence": 
 
 def normalize_finish(reason: str | None) -> str:
     return _FINISH.get(reason or "stop", "stop")
+
+
+def _workload_dict(p: WorkloadProfile | None) -> dict | None:
+    if p is None:
+        return None
+    return {"task_type": p.task_type.value, "task_confidence": p.task_confidence,
+            "task_alternatives": p.task_alternatives, "complexity": p.complexity,
+            "complexity_band": p.complexity_band.value, "est_input_tokens": p.est_input_tokens,
+            "est_output_tokens": p.est_output_tokens, "analysis_ms": p.analysis_ms,
+            "sources": p.sources}
 
 
 def _fmt(d: Decimal | None) -> str:
@@ -144,7 +159,11 @@ async def handle(
                          explanation=why)
         return GatewayResult(RequestStatus.BLOCKED_BUDGET, rid, why, state)
 
-    # 2. Exact cache
+    # 2. Workload analysis (~1 ms): task type, complexity, token estimates
+    profile = analyze(req.messages)
+    workload = _workload_dict(profile)
+
+    # 3. Exact cache
     key = cache.cache_key(req.team.id, req.route, req.messages, max_tokens, req.temperature)
     use_cache = req.use_cache and cache.is_cacheable(req.temperature)
     if use_cache and (hit := await cache.get(redis, key)):
@@ -153,24 +172,26 @@ async def handle(
                f"{hit.model}); no LLM call, saved {_fmt(saved)}.")
         rid = await _log(db, req, status=RequestStatus.CACHE_HIT, budget_state=state,
                          explanation=why, model_id=hit.model_id, input_tokens=0,
-                         output_tokens=0, baseline_cost=saved, savings=saved)
+                         output_tokens=0, baseline_cost=saved, savings=saved, profile=profile)
         return GatewayResult(RequestStatus.CACHE_HIT, rid, why, state, text=hit.text,
-                             model=hit.model, baseline_cost=saved, savings=saved)
+                             model=hit.model, baseline_cost=saved, savings=saved,
+                             workload=workload)
 
-    # 3. Plan: constraints + ordering
-    est_in = estimate_input_tokens(req.messages)
-    plan = await plan_route(db, req.team, req.route, est_in, max_tokens)
+    # 4. Plan: constraints + ordering
+    plan = await plan_route(db, req.team, req.route, profile.est_input_tokens,
+                            min(max_tokens, profile.est_output_tokens), max_tokens)
     if req.route != AUTO and all(c.model != req.route for c in plan.considered):
         raise UnknownModel(req.route)
     rejected = "; ".join(f"{c.model} ({c.rejected_reason})" for c in plan.rejected)
     if not plan.ordered:
-        why = (f"No model satisfies this request's constraints. Strategy: {plan.strategy}. "
-               f"Rejected: {rejected or 'none'}.")
+        why = (f"{profile.describe()} No model satisfies this request's constraints. "
+               f"Strategy: {plan.strategy}. Rejected: {rejected or 'none'}.")
         rid = await _log(db, req, status=RequestStatus.BLOCKED_CONSTRAINT, budget_state=state,
-                         explanation=why, plan=plan)
-        return GatewayResult(RequestStatus.BLOCKED_CONSTRAINT, rid, why, state)
+                         explanation=why, plan=plan, profile=profile)
+        return GatewayResult(RequestStatus.BLOCKED_CONSTRAINT, rid, why, state,
+                             workload=workload)
 
-    # 4. Execute with fallback
+    # 5. Execute with fallback
     res = await execute_with_fallback(
         db, plan.ordered, req.messages, max_tokens=max_tokens, temperature=req.temperature,
         timeout=settings.provider_timeout_s, breaker=breaker, adapter_factory=adapter_factory,
@@ -180,19 +201,21 @@ async def handle(
                        for a in res.attempts if a.outcome != "success")
 
     if not res.succeeded:
-        why = f"All eligible models failed ({failed}). Strategy: {plan.strategy}."
+        why = (f"{profile.describe()} All eligible models failed ({failed}). "
+               f"Strategy: {plan.strategy}.")
         rid = await _log(db, req, status=RequestStatus.FAILED, budget_state=state,
-                         explanation=why, plan=plan, attempts=attempts)
-        return GatewayResult(RequestStatus.FAILED, rid, why, state, attempts=attempts)
+                         explanation=why, plan=plan, attempts=attempts, profile=profile)
+        return GatewayResult(RequestStatus.FAILED, rid, why, state, attempts=attempts,
+                             workload=workload)
 
-    # 5. Price against the baseline and explain
+    # 6. Price against the baseline and explain
     c, model = res.completion, res.model
     baseline_cost = (compute_cost(plan.baseline_pricing, c.input_tokens, c.output_tokens)
                      if plan.baseline_pricing else None)
     savings = baseline_cost - res.cost if baseline_cost is not None else None
     status = RequestStatus.FALLBACK_SUCCESS if res.fallback_used else RequestStatus.SUCCESS
 
-    parts = [f"Route '{req.route}', strategy: {plan.strategy}."]
+    parts = [profile.describe(), f"Route '{req.route}', strategy: {plan.strategy}."]
     if rejected:
         parts.append(f"Rejected by constraints: {rejected}.")
     if res.fallback_used:
@@ -213,7 +236,7 @@ async def handle(
                      model_id=model.id, input_tokens=c.input_tokens,
                      output_tokens=c.output_tokens, cost=res.cost, latency_ms=c.latency_ms,
                      baseline_cost=baseline_cost, savings=savings, attempts=attempts,
-                     fallback_used=res.fallback_used)
+                     fallback_used=res.fallback_used, profile=profile)
 
     if use_cache:
         await cache.put(redis, key, cache.CachedResponse(
@@ -225,5 +248,5 @@ async def handle(
         status, rid, why, state, text=c.text, model=model.name, input_tokens=c.input_tokens,
         output_tokens=c.output_tokens, cost=res.cost, baseline_cost=baseline_cost,
         savings=savings, latency_ms=c.latency_ms,
-        finish_reason=normalize_finish(c.finish_reason), attempts=attempts,
+        finish_reason=normalize_finish(c.finish_reason), attempts=attempts, workload=workload,
     )

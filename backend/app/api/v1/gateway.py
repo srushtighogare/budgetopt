@@ -106,7 +106,7 @@ async def chat_completions(
     meta = {"request_id": res.request_id, "status": res.status.value,
             "cost": _money(res.cost), "baseline_cost": _money(res.baseline_cost),
             "savings": _money(res.savings), "budget_state": res.budget_state,
-            "explanation": res.explanation}
+            "explanation": res.explanation, "workload": res.workload}
     if not res.ok:
         code, kind = _FAILURES[res.status]
         return openai_error(code, res.explanation, kind, headers=headers, budgetopt=meta)
@@ -160,4 +160,5 @@ async def playground_route(
         input_tokens=res.input_tokens, output_tokens=res.output_tokens, cost=res.cost,
         baseline_cost=res.baseline_cost, savings=res.savings, latency_ms=res.latency_ms,
         budget_state=res.budget_state, explanation=res.explanation, attempts=res.attempts,
+        workload=res.workload,
     )

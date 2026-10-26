@@ -1,0 +1,121 @@
+{
+  "selected": "logreg",
+  "val_macro_f1": 0.7886,
+  "test_accuracy": 0.7767,
+  "test_macro_f1": 0.7748,
+  "latency_ms_per_prompt": 0.46,
+  "confidence": {
+    "conf>=0.5": {
+      "share": 0.762,
+      "accuracy": 0.8694
+    },
+    "conf>=0.7": {
+      "share": 0.558,
+      "accuracy": 0.9478
+    },
+    "conf>=0.9": {
+      "share": 0.267,
+      "accuracy": 0.9818
+    }
+  },
+  "n_train": 3275,
+  "n_val": 409,
+  "n_test": 412,
+  "annotator_vs_source_label_agreement": {
+    "codealpaca": 0.846,
+    "dolly": 0.584,
+    "gsm8k": 1.0,
+    "math": 0.987,
+    "mbpp": 1.0
+  },
+  "model_selection": [
+    {
+      "family": "logreg",
+      "params": {
+        "C": 1.0
+      },
+      "val_macro_f1": 0.7854,
+      "fit_s": 0.9
+    },
+    {
+      "family": "logreg",
+      "params": {
+        "C": 4.0
+      },
+      "val_macro_f1": 0.7886,
+      "fit_s": 1.1
+    },
+    {
+      "family": "logreg",
+      "params": {
+        "C": 16.0
+      },
+      "val_macro_f1": 0.7811,
+      "fit_s": 1.0
+    },
+    {
+      "family": "linear_svm",
+      "params": {
+        "C": 0.25
+      },
+      "val_macro_f1": 0.7838,
+      "fit_s": 0.6
+    },
+    {
+      "family": "linear_svm",
+      "params": {
+        "C": 1.0
+      },
+      "val_macro_f1": 0.7776,
+      "fit_s": 0.8
+    },
+    {
+      "family": "linear_svm",
+      "params": {
+        "C": 4.0
+      },
+      "val_macro_f1": 0.766,
+      "fit_s": 1.0
+    },
+    {
+      "family": "complement_nb",
+      "params": {
+        "alpha": 0.1
+      },
+      "val_macro_f1": 0.7247,
+      "fit_s": 0.3
+    },
+    {
+      "family": "complement_nb",
+      "params": {
+        "alpha": 0.3
+      },
+      "val_macro_f1": 0.736,
+      "fit_s": 0.3
+    },
+    {
+      "family": "complement_nb",
+      "params": {
+        "alpha": 1.0
+      },
+      "val_macro_f1": 0.7307,
+      "fit_s": 0.3
+    }
+  ],
+  "ood": {
+    "n": 320,
+    "accuracy": 0.6219,
+    "macro_f1": 0.5956,
+    "top2_accuracy": 0.7969,
+    "inter_annotator_agreement": 0.7188,
+    "label_distribution": {
+      "analysis": 56,
+      "simple_qa": 68,
+      "creative_writing": 116,
+      "coding": 25,
+      "extraction": 40,
+      "reasoning_math": 10,
+      "summarization": 5
+    }
+  }
+}

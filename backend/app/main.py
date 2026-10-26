@@ -1,3 +1,6 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.exception_handlers import (
     http_exception_handler,
@@ -9,10 +12,19 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1 import auth, gateway, models, providers, requests, teams, users
 from app.core.config import get_settings
+from app.services.workload.analyzer import warm_up
 
 settings = get_settings()
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    warm_up()  # load ML models before the first request
+    yield
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title="BudgetOpt API",
     description="AI based cost-optimal LLM selection and token budget optimization platform",
     version="0.1.0",
