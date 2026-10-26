@@ -8,6 +8,7 @@ os.environ["DATABASE_URL"] = os.environ.get(
     "postgresql+asyncpg://budgetopt:budgetopt@localhost:5433/budgetopt_test",
 )
 os.environ["REDIS_URL"] = os.environ.get("TEST_REDIS_URL", "redis://localhost:6380/15")
+os.environ["ENABLE_SCHEDULER"] = "false"
 os.environ.setdefault("FERNET_KEY", "TlUtFm5JnEXw2b0iY4Yqk0ZfVxH0lH0nZ8j3w3G0p3Q=")
 
 from collections.abc import AsyncIterator  # noqa: E402

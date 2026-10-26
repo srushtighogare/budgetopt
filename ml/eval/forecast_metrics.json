@@ -1,0 +1,31 @@
+{
+  "series": 120,
+  "horizon_days": 7,
+  "methods_chosen": {
+    "ets_level_weekly": 93,
+    "ets_damped_trend_weekly": 27
+  },
+  "summary": {
+    "budgetopt": {
+      "median_total_ape_pct": 11.0,
+      "mean_total_ape_pct": 14.39,
+      "median_daily_mae_pct_of_mean": 17.74
+    },
+    "naive_7": {
+      "median_total_ape_pct": 10.82,
+      "mean_total_ape_pct": 14.68,
+      "median_daily_mae_pct_of_mean": 24.1
+    },
+    "run_rate": {
+      "median_total_ape_pct": 26.57,
+      "mean_total_ape_pct": 28.96,
+      "median_daily_mae_pct_of_mean": 33.73
+    }
+  },
+  "budgetopt_beats_naive_7_share": 0.592,
+  "interval_90_coverage_uncalibrated": 0.633,
+  "interval_90_coverage": 0.817,
+  "interval_scale_in_use": 1.63,
+  "interval_scale_measured_on_calibration_set": 1.634,
+  "seconds_per_series": 0.02
+}

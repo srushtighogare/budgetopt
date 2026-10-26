@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     cache_ttl_s: int = 86_400
     provider_timeout_s: float = 60.0
 
+    # Background monitoring (forecasts, anomaly scans) inside the API process
+    enable_scheduler: bool = True
+    forecast_interval_s: int = 3600
+    anomaly_interval_s: int = 900
+
     # Provider credentials (copied, encrypted, into `providers` by the seed script)
     groq_api_key: str = ""
     google_api_key: str = ""

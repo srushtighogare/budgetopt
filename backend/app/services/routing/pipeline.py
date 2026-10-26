@@ -22,6 +22,7 @@ from app.core.config import get_settings
 from app.core.security import hash_prompt
 from app.db.models import AllocationPolicy, Request, RequestStatus, RoutingDecision, Team
 from app.services import cache
+from app.services.alerts import budget_alerts
 from app.services.budget import BudgetState, budget_status
 from app.services.pricing import compute_cost
 from app.services.privacy import redact
@@ -155,6 +156,7 @@ async def handle(
     # 1. Budget gate: an over-budget team never reaches an LLM, so blocking is free
     budget = await budget_status(db, req.team)
     state = budget.state.value
+    await budget_alerts(db, req.team, budget)  # once per team, month and threshold
     if budget.state == BudgetState.HARD_BLOCK:
         why = (f"Blocked before any LLM call: month-to-date spend {_fmt(budget.spend)} "
                f"has reached the team budget {_fmt(budget.monthly_budget)}.")

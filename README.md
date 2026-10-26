@@ -17,7 +17,8 @@ The full design and the build roadmap are in [docs/plan.md](docs/plan.md).
 | 4 | Workload analysis ML: task classifier, complexity model, token estimator | Classifier done; complexity & token models training on labelled data |
 | 5 | Model profiling: per-task quality via LLM judge + gold answers, latency percentiles | **Done** (profiles filling on free tiers) |
 | 6 | Optimizer: NSGA-II multi-objective allocation, exact ILP/LP, allocation policies used by the router | **Done** |
-| 7–9 | Forecasting, anomaly detection, what-if simulator, semantic cache | Next |
+| 7 | Spend forecasting (ETS, calibrated intervals), budget and overrun alerts, anomaly detection | **Done** |
+| 8–9 | What-if simulator, semantic cache | Next |
 | 10 | React dashboard | Planned |
 | 11 | Benchmark and evaluation | Planned |
 
@@ -93,6 +94,21 @@ is from the exact LP optimum. `"method": "ilp"` solves a single objective exactl
 OR-Tools, for example the cheapest allocation that meets a mean-quality floor. When a team
 crosses its alert threshold, the router switches to the team's `savings` policy.
 
+## Monitoring and forecasting
+
+- **Forecast:** `GET /api/v1/teams/{id}/forecast?refresh=true` gives the projected month-end
+  spend with a 90% interval, the probability of overrunning the budget and the likely overrun
+  date. It fits exponential smoothing (ETS, weekly pattern, AICc model choice) to daily spend,
+  and intervals come from 500 simulated paths. Benchmark: `ml/eval/forecast_report.md`.
+- **Alerts:** `GET /api/v1/alerts`. One alert per team per month each for the soft threshold,
+  the hard block and a likely forecast overrun.
+- **Anomalies:** each API key and user is compared with its own usage at the same time of day
+  over the past week (robust z-score on requests and spend). A background scheduler runs scans
+  every 15 minutes and forecasts hourly; both can also be triggered via `/api/v1/monitoring/*`.
+- **Demo data:** `python -m app.demo_traffic` fills a separate "Demo (synthetic traffic)" team
+  with 6 weeks of realistic usage, including one spike, so these features can be shown
+  without real history.
+
 ## Tests
 
 Tests run against a real PostgreSQL database (`budgetopt_test`) and Redis (db 15):
@@ -115,7 +131,8 @@ backend/
     services/    pricing, budget, cache, rate_limit, privacy, tokens, providers/ (LLM
                  adapters), routing/ (router, pipeline, fallback executor, breaker),
                  workload/ (classifier, complexity, token estimates), profiling/,
-                 optimizer/ (problem, NSGA-II, ILP/LP, policies)
+                 optimizer/ (problem, NSGA-II, ILP/LP, policies), forecasting, alerts,
+                 anomaly, scheduler
     seed.py      demo org, teams, admin, providers, models
   migrations/    Alembic migrations
   tests/

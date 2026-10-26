@@ -342,7 +342,9 @@ class Forecast(TimestampMixin, Base):
     lower: Mapped[Decimal] = mapped_column(Money)
     upper: Mapped[Decimal] = mapped_column(Money)
     overrun_date: Mapped[date | None] = mapped_column(Date)
-    daily: Mapped[list[Any]]  # [{date, mean, lower, upper}]
+    overrun_probability: Mapped[float | None] = mapped_column(Float)
+    daily: Mapped[list[Any]]  # [{date, actual, mean, lower, upper, cumulative_mean}]
+    backtest: Mapped[dict[str, Any] | None]
 
 
 class Alert(TimestampMixin, Base):

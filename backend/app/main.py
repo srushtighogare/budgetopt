@@ -14,6 +14,7 @@ from app.api.v1 import (
     auth,
     gateway,
     models,
+    monitoring,
     optimization,
     profiling,
     providers,
@@ -22,6 +23,7 @@ from app.api.v1 import (
     users,
 )
 from app.core.config import get_settings
+from app.services import scheduler
 from app.services.workload.analyzer import warm_up
 
 settings = get_settings()
@@ -30,7 +32,10 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     warm_up()  # load ML models before the first request
+    tasks = scheduler.start()
     yield
+    for t in tasks:
+        t.cancel()
 
 
 app = FastAPI(
@@ -49,7 +54,8 @@ app.add_middleware(
 )
 
 for r in (auth.router, users.router, teams.router, models.router, providers.router,
-          requests.router, gateway.router, profiling.router, optimization.router):
+          requests.router, gateway.router, profiling.router, optimization.router,
+          monitoring.router):
     app.include_router(r, prefix="/api/v1")
 app.include_router(gateway.openai_router)
 

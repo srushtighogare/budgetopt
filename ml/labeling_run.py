@@ -170,6 +170,11 @@ class Runner:
                 last = f"{resp.status_code}"
                 continue
             raise RuntimeError(f"{model} {resp.status_code}: {resp.text[:300]}")
+        if last.startswith("429"):
+            # Rate-limited on every retry: treat like an exhausted quota so the stage moves
+            # on to the next model (or pauses) instead of crashing the run
+            self.exhausted.add(model)
+            raise DailyQuotaExhausted(model)
         raise RuntimeError(f"{model} kept failing ({last})")
 
     @staticmethod
