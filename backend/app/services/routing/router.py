@@ -8,11 +8,15 @@ if it violates a requirement):
   - prompt + requested output fits the model's context window
 
 Ordering. With an explicit model the client's choice comes first and the
-remaining eligible models follow as fallbacks. With `auto` the INTERIM strategy
-is cheapest-eligible-first; phase 6 replaces it with the optimizer's allocation
-policy for the request's task type and complexity.
+remaining eligible models follow as fallbacks. With `auto` the team's allocation
+policy (produced by the optimizer) decides: the request's workload class
+(task type, complexity band) maps to a traffic split, the primary model is drawn
+from that split, the split's other models follow, and any remaining eligible
+models follow cheapest-first as a last resort. Teams without a policy, or
+classes the policy doesn't cover, fall back to cheapest-eligible-first.
 """
 
+import random
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -21,7 +25,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.db.models import LLMModel, ModelPricing, PrivacyTier, Team
+from app.db.models import AllocationPolicy, LLMModel, ModelPricing, PrivacyTier, Team
+from app.services.optimizer.policy import pick_order
 from app.services.pricing import compute_cost
 
 AUTO = "auto"
@@ -53,6 +58,7 @@ class RoutingPlan:
     considered: list[CandidateInfo] = field(default_factory=list)
     baseline: LLMModel | None = None
     baseline_pricing: ModelPricing | None = None
+    policy_id: int | None = None
 
     @property
     def rejected(self) -> list[CandidateInfo]:
@@ -65,7 +71,8 @@ def _current_price(model: LLMModel, now: datetime) -> ModelPricing | None:
 
 async def plan_route(
     db: AsyncSession, team: Team, route: str, est_input_tokens: int, est_output_tokens: int,
-    max_tokens: int,
+    max_tokens: int, *, policy: AllocationPolicy | None = None, class_key: str | None = None,
+    rng: random.Random | None = None,
 ) -> RoutingPlan:
     """`est_*` come from workload analysis and drive cost estimates; `max_tokens`
     (the hard output cap) drives the context-window check."""
@@ -109,8 +116,23 @@ async def plan_route(
     eligible.sort(key=lambda t: (t[0], t[1].id))
     by_cost = [m for _, m in eligible]
     if route == AUTO:
-        plan.strategy = "cheapest eligible first (interim, until optimizer policies)"
-        plan.ordered = by_cost
+        rule = policy.rules.get(class_key) if policy and class_key else None
+        order = pick_order(rule, {m.id for m in by_cost}, rng or random.Random()) if rule else []
+        if order:
+            by_id = {m.id: m for m in by_cost}
+            plan.ordered = [by_id[i] for i in order] + [m for m in by_cost if m.id not in order]
+            split = ", ".join(f"{r['share']:.0%} {r['model']}" for r in rule)
+            plan.strategy = (f"policy '{policy.name}' (#{policy.id}) for {class_key}: {split}; "
+                             f"drew {by_id[order[0]].name}")
+            plan.policy_id = policy.id
+        elif policy:
+            why = "has no rule for" if not rule else "has no eligible model for"
+            plan.strategy = f"policy '{policy.name}' {why} {class_key}; cheapest eligible first"
+            plan.ordered = by_cost
+            plan.policy_id = policy.id
+        else:
+            plan.strategy = "cheapest eligible first (team has no allocation policy)"
+            plan.ordered = by_cost
     else:
         requested = next((m for m in by_cost if m.name == route), None)
         if requested is None:

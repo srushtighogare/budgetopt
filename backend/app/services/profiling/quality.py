@@ -166,8 +166,8 @@ async def run_quality_profile(
                 report.judged += 1
             db.add(row)
             await db.commit()
+        await aggregate_quality(db)  # after each model, so partial runs are usable
 
-    await aggregate_quality(db)
     return report
 
 

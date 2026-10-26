@@ -11,6 +11,7 @@ so a burst of simultaneous requests can overshoot a budget by at most those
 in-flight requests; the next request after that is blocked.
 """
 
+import random
 from dataclasses import dataclass, field
 from decimal import Decimal
 
@@ -19,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.security import hash_prompt
-from app.db.models import Request, RequestStatus, RoutingDecision, Team
+from app.db.models import AllocationPolicy, Request, RequestStatus, RoutingDecision, Team
 from app.services import cache
 from app.services.budget import BudgetState, budget_status
 from app.services.pricing import compute_cost
@@ -104,6 +105,7 @@ async def _log(db: AsyncSession, req: GatewayRequest, *, status: RequestStatus,
     await db.flush()
     db.add(RoutingDecision(
         request_id=row.id, budget_state=budget_state,
+        policy_id=plan.policy_id if plan else None,
         candidates={"considered": [c.as_dict() for c in plan.considered] if plan else [],
                     "attempts": attempts or [], "strategy": plan.strategy if plan else None,
                     "workload": _workload_dict(profile)},
@@ -143,6 +145,7 @@ async def handle(
     db: AsyncSession, redis: Redis, req: GatewayRequest, *,
     adapter_factory: AdapterFactory | None = None,
     breaker: CircuitBreaker | None = None,
+    rng: random.Random | None = None,
 ) -> GatewayResult:
     settings = get_settings()
     adapter_factory = adapter_factory or build_adapter
@@ -177,9 +180,16 @@ async def handle(
                              model=hit.model, baseline_cost=saved, savings=saved,
                              workload=workload)
 
-    # 4. Plan: constraints + ordering
-    plan = await plan_route(db, req.team, req.route, profile.est_input_tokens,
-                            min(max_tokens, profile.est_output_tokens), max_tokens)
+    # 4. Plan: constraints + ordering (the team's optimizer policy; its cost-saver policy
+    #    once the budget alert threshold is crossed)
+    policy_id = req.team.policy_id
+    if budget.state == BudgetState.SOFT_ALERT and req.team.savings_policy_id:
+        policy_id = req.team.savings_policy_id
+    policy = await db.get(AllocationPolicy, policy_id) if policy_id else None
+    plan = await plan_route(
+        db, req.team, req.route, profile.est_input_tokens,
+        min(max_tokens, profile.est_output_tokens), max_tokens, policy=policy,
+        class_key=f"{profile.task_type.value}:{profile.complexity_band.value}", rng=rng)
     if req.route != AUTO and all(c.model != req.route for c in plan.considered):
         raise UnknownModel(req.route)
     rejected = "; ".join(f"{c.model} ({c.rejected_reason})" for c in plan.rejected)

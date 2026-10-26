@@ -16,8 +16,8 @@ The full design and the build roadmap are in [docs/plan.md](docs/plan.md).
 | 3 | OpenAI-compatible gateway, request and decision logging, exact cache, rate limits, PII redaction | **Done** |
 | 4 | Workload analysis ML: task classifier, complexity model, token estimator | Classifier done; complexity & token models training on labelled data |
 | 5 | Model profiling: per-task quality via LLM judge + gold answers, latency percentiles | **Done** (profiles filling on free tiers) |
-| 6 | Optimizer: NSGA-II and ILP allocation, constraint filter, explanations | Next |
-| 7–9 | Forecasting, anomaly detection, what-if simulator, semantic cache | Planned |
+| 6 | Optimizer: NSGA-II multi-objective allocation, exact ILP/LP, allocation policies used by the router | **Done** |
+| 7–9 | Forecasting, anomaly detection, what-if simulator, semantic cache | Next |
 | 10 | React dashboard | Planned |
 | 11 | Benchmark and evaluation | Planned |
 
@@ -73,6 +73,26 @@ against gold answers. Other answers are graded 1–10 by a judge model, and a mo
 judges itself. Results are stored per answer and aggregated into per-task quality scores.
 Latency p50/p95 comes from live traffic plus profiling calls.
 
+## Optimization
+
+```bash
+# NSGA-II over cost, quality and latency for a team's recent traffic
+curl -X POST localhost:8000/api/v1/optimization/runs -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"team_id": 1}'
+# deploy one point of the Pareto front as the team's policy (or its budget-alert policy)
+curl -X POST localhost:8000/api/v1/optimization/runs/1/apply -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"team_id": 1, "preset": "balanced"}'
+```
+
+Each workload class (task type × complexity band) gets a traffic split across models. A model
+may serve a class only if its profiled quality meets that band's floor (6/7/8 out of 10) and
+it passes the latency, context and privacy limits. NSGA-II returns the Pareto front plus
+three presets: `cost_saver`, `balanced` (knee point) and `quality_first`. Every run also
+reports baselines (all traffic to one model, cheapest-per-class) and checks how far NSGA-II
+is from the exact LP optimum. `"method": "ilp"` solves a single objective exactly with
+OR-Tools, for example the cheapest allocation that meets a mean-quality floor. When a team
+crosses its alert threshold, the router switches to the team's `savings` policy.
+
 ## Tests
 
 Tests run against a real PostgreSQL database (`budgetopt_test`) and Redis (db 15):
@@ -94,7 +114,8 @@ backend/
     schemas/     request/response models
     services/    pricing, budget, cache, rate_limit, privacy, tokens, providers/ (LLM
                  adapters), routing/ (router, pipeline, fallback executor, breaker),
-                 workload/ (classifier, complexity, token estimates), profiling/
+                 workload/ (classifier, complexity, token estimates), profiling/,
+                 optimizer/ (problem, NSGA-II, ILP/LP, policies)
     seed.py      demo org, teams, admin, providers, models
   migrations/    Alembic migrations
   tests/

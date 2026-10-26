@@ -22,6 +22,8 @@ dependencies = [
     "scikit-learn>=1.5",
     "joblib>=1.4",
     "numpy>=1.26",
+    "pymoo>=0.6.1",
+    "ortools>=9.11",
 ]
 
 [project.optional-dependencies]
@@ -48,6 +50,10 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
+filterwarnings = [
+    # OR-Tools' SWIG bindings, harmless
+    "ignore:builtin type .* has no __module__ attribute:DeprecationWarning",
+]
 
 [tool.ruff]
 line-length = 100
