@@ -3,6 +3,9 @@ from functools import lru_cache
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+DEV_JWT_SECRET = "dev-only-secret-change-me-please"
+SAFE_ENVIRONMENTS = {"development", "test"}
+
 
 class Settings(BaseSettings):
     """Application settings, read from environment variables (and `.env`)."""
@@ -16,7 +19,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
 
     # Security
-    jwt_secret: str = Field(default="dev-only-secret-change-me-please", min_length=16)
+    jwt_secret: str = Field(default=DEV_JWT_SECRET, min_length=16)
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 30
     refresh_token_days: int = 7
@@ -53,6 +56,22 @@ class Settings(BaseSettings):
     # Initial org admin created by the seed script
     seed_admin_email: str = "admin@example.com"
     seed_admin_password: str = "ChangeMe!2026"
+
+
+    def production_problems(self) -> list[str]:
+        """Settings that are fine for local development but unsafe anywhere else."""
+        if self.environment in SAFE_ENVIRONMENTS:
+            return []
+        problems = []
+        if self.jwt_secret == DEV_JWT_SECRET or len(self.jwt_secret) < 32:
+            problems.append("JWT_SECRET must be a random string of at least 32 characters")
+        if not self.fernet_key:
+            problems.append("FERNET_KEY must be set (provider API keys are encrypted with it)")
+        if self.seed_admin_password == "ChangeMe!2026":
+            problems.append("SEED_ADMIN_PASSWORD must be changed from the default")
+        if any(o == "*" or o.startswith("http://localhost") for o in self.cors_origins):
+            problems.append("CORS_ORIGINS must list the real dashboard origin(s)")
+        return problems
 
 
 @lru_cache

@@ -5,7 +5,7 @@ services:
       POSTGRES_USER: budgetopt
       POSTGRES_PASSWORD: budgetopt
       POSTGRES_DB: budgetopt
-    ports: ["5433:5432"]
+    ports: ["127.0.0.1:5433:5432"]  # local only
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U budgetopt"]
@@ -14,7 +14,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports: ["6380:6379"]
+    ports: ["127.0.0.1:6380:6379"]  # local only
 
   api:
     build: ./backend
@@ -23,14 +23,17 @@ services:
       DATABASE_URL: postgresql+asyncpg://budgetopt:budgetopt@postgres:5432/budgetopt
       REDIS_URL: redis://redis:6379/0
     ports: ["8000:8000"]
+    volumes: [models:/app/.cache]  # embedding model, downloaded once
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_started }
 
   dashboard:
     build: ./frontend
-    ports: ["5173:80"]
-    depends_on: [api]
+    ports: ["8080:80"]
+    depends_on:
+      api: { condition: service_healthy }
 
 volumes:
   pgdata:
+  models:

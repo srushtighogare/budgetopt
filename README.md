@@ -6,8 +6,15 @@ Final-year project, Department of Computer Engineering, Vishwakarma Institute of
 BudgetOpt helps organizations control LLM spending. It classifies each AI workload by task type and complexity, estimates token usage, and allocates work across LLMs. Allocation uses multi-objective optimization (NSGA-II) over cost, quality and latency. BudgetOpt also enforces team budgets, forecasts spend and supports what-if analysis, and it explains every routing decision.
 
 The full design and the build roadmap are in [docs/plan.md](docs/plan.md).
-Evaluation results for every component (classifier, optimizer, forecasting, semantic cache,
-routing overhead, end-to-end benchmark) are collected in [docs/evaluation.md](docs/evaluation.md).
+Further documentation:
+
+- [docs/architecture.md](docs/architecture.md): components, request flow, data model, code map
+- [docs/evaluation.md](docs/evaluation.md): results for every component
+- [docs/security.md](docs/security.md): each security requirement, how it's implemented, which test covers it
+- [docs/demo.md](docs/demo.md): demo script for the project review
+- [docs/screenshots/](docs/screenshots/): dashboard screenshots (`capture.py` regenerates them)
+
+![BudgetOpt dashboard](docs/screenshots/overview.png)
 
 ## Status
 
@@ -71,7 +78,8 @@ is in the header. Pages:
 - **Models:** prices, the quality heatmap, provider keys
 - **Teams & budgets:** budgets, API keys, members
 
-`docker compose up` also serves the built dashboard on port 5173, behind nginx.
+`docker compose up --build` runs the whole system: PostgreSQL, Redis, the API on :8000 and the
+built dashboard on **:8080**. The dashboard is served by nginx, which forwards API calls.
 
 ## Using the gateway from an application
 

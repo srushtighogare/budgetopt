@@ -194,3 +194,45 @@ async def test_spend_and_budget_state(client, admin_headers, db):
     r = (await client.get(f"/api/v1/teams/{mkt.id}/spend", headers=admin_headers)).json()
     assert Decimal(r["spend"]) == Decimal("0.42")
     assert r["budget_state"] == "soft_alert"  # 84% of budget
+
+
+async def test_login_throttled_after_repeated_failures(client):
+    for _ in range(5):
+        r = await client.post("/api/v1/auth/login",
+                              data={"username": "admin@example.com", "password": "wrong"})
+        assert r.status_code == 401
+    blocked = await client.post("/api/v1/auth/login",
+                                data={"username": "admin@example.com",
+                                      "password": "ChangeMe!2026"})
+    assert blocked.status_code == 429 and int(blocked.headers["Retry-After"]) > 0
+    # other accounts are unaffected
+    other = await client.post("/api/v1/auth/login",
+                              data={"username": "someone@example.com", "password": "x"})
+    assert other.status_code == 401
+
+
+async def test_successful_login_resets_failure_count(client):
+    for _ in range(4):
+        await client.post("/api/v1/auth/login",
+                          data={"username": "admin@example.com", "password": "wrong"})
+    ok = await client.post("/api/v1/auth/login",
+                           data={"username": "admin@example.com", "password": "ChangeMe!2026"})
+    assert ok.status_code == 200
+    again = await client.post("/api/v1/auth/login",
+                              data={"username": "admin@example.com", "password": "wrong"})
+    assert again.status_code == 401  # counter was reset, not at the limit
+
+
+def test_production_refuses_development_settings():
+    from app.core.config import DEV_JWT_SECRET, Settings
+
+    dev = Settings(_env_file=None, environment="development")
+    assert dev.production_problems() == []
+    prod = Settings(_env_file=None, environment="production", fernet_key="",
+                    jwt_secret=DEV_JWT_SECRET)
+    problems = " ".join(prod.production_problems())
+    assert "JWT_SECRET" in problems and "FERNET_KEY" in problems and "CORS" in problems
+    ok = Settings(_env_file=None, environment="production", jwt_secret="x" * 40, fernet_key="k",
+                  seed_admin_password="Another-Strong-Pass-9",
+                  cors_origins=["https://budgetopt.example.org"])
+    assert ok.production_problems() == []

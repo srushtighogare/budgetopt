@@ -32,6 +32,10 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    if problems := settings.production_problems():
+        # Refuse to start rather than run in production with development secrets
+        raise RuntimeError(f"unsafe configuration for ENVIRONMENT={settings.environment!r}: "
+                           + "; ".join(problems))
     warm_up()  # load ML models before the first request
     semantic_cache.warm_up()
     tasks = scheduler.start()
