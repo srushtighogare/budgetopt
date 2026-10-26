@@ -10,6 +10,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -18,6 +19,7 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -326,6 +328,40 @@ class RoutingDecision(TimestampMixin, Base):
     explanation: Mapped[str] = mapped_column(Text)
 
     request: Mapped[Request] = relationship(back_populates="decision")
+
+
+EMBEDDING_DIM = 384  # BAAI/bge-small-en-v1.5
+
+
+class SemanticCacheEntry(TimestampMixin, Base):
+    """A cached answer findable by meaning, not only by exact text (pgvector HNSW index).
+
+    `context_key` hashes everything except the last user message (system prompt, earlier
+    turns, route and generation settings); a hit requires it to match exactly.
+    """
+
+    __tablename__ = "semantic_cache_entries"
+    __table_args__ = (
+        Index("ix_semantic_cache_embedding", "embedding", postgresql_using="hnsw",
+              postgresql_ops={"embedding": "vector_cosine_ops"}),
+        Index("ix_semantic_cache_lookup", "team_id", "context_key"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"))
+    context_key: Mapped[str] = mapped_column(String(64))
+    task_type: Mapped[TaskType] = mapped_column(_enum(TaskType, "task_type"))
+    embedding: Mapped[list[float]] = mapped_column(Vector(EMBEDDING_DIM))
+    numbers: Mapped[str] = mapped_column(String(500), default="")  # sorted numbers in prompt
+    # Fernet-encrypted last user message, needed only by the verifier; expires with the entry
+    prompt_encrypted: Mapped[str] = mapped_column(Text)
+    response_text: Mapped[str] = mapped_column(Text)
+    model_id: Mapped[int] = mapped_column(ForeignKey("llm_models.id"))
+    model_name: Mapped[str] = mapped_column(String(100))
+    original_cost: Mapped[Decimal] = mapped_column(Money)
+    original_request_id: Mapped[int] = mapped_column(ForeignKey("requests.id"))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    hits: Mapped[int] = mapped_column(Integer, default=0)
 
 
 # --- Budget monitoring ---

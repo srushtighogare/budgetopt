@@ -18,6 +18,7 @@ from app.db.session import SessionLocal
 from app.services.alerts import forecast_alert
 from app.services.anomaly import scan_and_alert
 from app.services.forecasting import forecast_team
+from app.services.semantic_cache import purge_expired
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +34,9 @@ async def refresh_all_forecasts() -> int:
 
 async def scan_anomalies() -> int:
     async with SessionLocal() as db:
-        return len(await scan_and_alert(db))
+        n = len(await scan_and_alert(db))
+        await purge_expired(db)  # expired semantic-cache entries and their prompts
+        return n
 
 
 async def _every(seconds: int, job: Callable[[], Awaitable[int]]) -> None:

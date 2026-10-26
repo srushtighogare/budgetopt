@@ -1,0 +1,100 @@
+{"a": "What is the capital of Australia?", "b": "Which city is Australia's capital?", "same": true}
+{"a": "How do I reset my password?", "b": "I forgot my password, how can I reset it?", "same": true}
+{"a": "What does HTTP stand for?", "b": "What is the full form of HTTP?", "same": true}
+{"a": "Who wrote Pride and Prejudice?", "b": "Who is the author of Pride and Prejudice?", "same": true}
+{"a": "What is photosynthesis?", "b": "Can you explain what photosynthesis is?", "same": true}
+{"a": "How many continents are there?", "b": "What is the number of continents on Earth?", "same": true}
+{"a": "What is the boiling point of water at sea level?", "b": "At sea level, at what temperature does water boil?", "same": true}
+{"a": "What is the difference between RAM and ROM?", "b": "How is RAM different from ROM?", "same": true}
+{"a": "Why is the sky blue?", "b": "What makes the sky appear blue?", "same": true}
+{"a": "What is machine learning?", "b": "Explain what machine learning is.", "same": true}
+{"a": "Who painted the Mona Lisa?", "b": "Which artist painted the Mona Lisa?", "same": true}
+{"a": "What is the largest planet in our solar system?", "b": "Which planet is the biggest in the solar system?", "same": true}
+{"a": "What are the benefits of regular exercise?", "b": "What are the advantages of exercising regularly?", "same": true}
+{"a": "How does a vaccine work?", "b": "Explain how vaccines work.", "same": true}
+{"a": "What is inflation in economics?", "b": "In economics, what does inflation mean?", "same": true}
+{"a": "What is the speed of light?", "b": "How fast does light travel?", "same": true}
+{"a": "What causes earthquakes?", "b": "Why do earthquakes happen?", "same": true}
+{"a": "What is an API?", "b": "Can you tell me what an API is?", "same": true}
+{"a": "What are the pros and cons of remote work?", "b": "What are the advantages and disadvantages of working remotely?", "same": true}
+{"a": "Compare renewable and non-renewable energy sources.", "b": "How do renewable energy sources compare with non-renewable ones?", "same": true}
+{"a": "What is the GDP of a country?", "b": "What does a country's GDP mean?", "same": true}
+{"a": "Who discovered penicillin?", "b": "Penicillin was discovered by whom?", "same": true}
+{"a": "What is blockchain technology?", "b": "Explain blockchain technology.", "same": true}
+{"a": "What is the main function of the heart?", "b": "What does the heart mainly do?", "same": true}
+{"a": "What is cloud computing?", "b": "Could you explain cloud computing?", "same": true}
+{"a": "What language is spoken in Brazil?", "b": "Which language do people in Brazil speak?", "same": true}
+{"a": "Why do leaves change colour in autumn?", "b": "What makes leaves change color in the fall?", "same": true}
+{"a": "What is a black hole?", "b": "Explain what a black hole is.", "same": true}
+{"a": "What are the main causes of climate change?", "b": "What mainly causes climate change?", "same": true}
+{"a": "How does compound interest work?", "b": "Explain how compound interest works.", "same": true}
+{"a": "What is the tallest mountain in the world?", "b": "Which mountain is the highest on Earth?", "same": true}
+{"a": "What is the role of the United Nations?", "b": "What does the United Nations do?", "same": true}
+{"a": "What are the symptoms of dehydration?", "b": "What symptoms show that someone is dehydrated?", "same": true}
+{"a": "Evaluate the impact of social media on teenagers.", "b": "Assess how social media affects teenagers.", "same": true}
+{"a": "What is the difference between a virus and bacteria?", "b": "How do viruses differ from bacteria?", "same": true}
+{"a": "Who was the first person to walk on the moon?", "b": "Who first walked on the moon?", "same": true}
+{"a": "What is democracy?", "b": "Can you define democracy?", "same": true}
+{"a": "Why is sleep important?", "b": "What makes sleep important for us?", "same": true}
+{"a": "What is the purpose of a firewall?", "b": "What is a firewall used for?", "same": true}
+{"a": "What are the advantages of electric cars?", "b": "What are the benefits of electric vehicles?", "same": true}
+{"a": "How do airplanes stay in the air?", "b": "What keeps an airplane in the air?", "same": true}
+{"a": "What is the meaning of 'opportunity cost'?", "b": "What does opportunity cost mean?", "same": true}
+{"a": "What is the function of the mitochondria?", "b": "What do mitochondria do in a cell?", "same": true}
+{"a": "Why did the Roman Empire fall?", "b": "What were the reasons for the fall of the Roman Empire?", "same": true}
+{"a": "What is artificial intelligence?", "b": "Explain artificial intelligence.", "same": true}
+{"a": "What is the chemical symbol for gold?", "b": "Which chemical symbol represents gold?", "same": true}
+{"a": "What are the main features of Python?", "b": "What are Python's key features?", "same": true}
+{"a": "What is supply and demand?", "b": "Explain the concept of supply and demand.", "same": true}
+{"a": "What is the ozone layer?", "b": "Can you explain what the ozone layer is?", "same": true}
+{"a": "What are the risks of smoking?", "b": "What are the dangers of smoking?", "same": true}
+{"a": "What is the capital of Australia?", "b": "What is the capital of Austria?", "same": false}
+{"a": "What is the capital of France?", "b": "What is the capital of Germany?", "same": false}
+{"a": "Who wrote Pride and Prejudice?", "b": "Who wrote Sense and Sensibility?", "same": false}
+{"a": "What is the largest planet in our solar system?", "b": "What is the smallest planet in our solar system?", "same": false}
+{"a": "What are the benefits of regular exercise?", "b": "What are the risks of excessive exercise?", "same": false}
+{"a": "What are the advantages of electric cars?", "b": "What are the disadvantages of electric cars?", "same": false}
+{"a": "What is the boiling point of water at sea level?", "b": "What is the freezing point of water at sea level?", "same": false}
+{"a": "Who was the first person to walk on the moon?", "b": "Who was the second person to walk on the moon?", "same": false}
+{"a": "What is the tallest mountain in the world?", "b": "What is the tallest mountain in Africa?", "same": false}
+{"a": "What language is spoken in Brazil?", "b": "What language is spoken in Argentina?", "same": false}
+{"a": "What is the difference between RAM and ROM?", "b": "What is the difference between RAM and a hard disk?", "same": false}
+{"a": "What is machine learning?", "b": "What is deep learning?", "same": false}
+{"a": "Why is the sky blue?", "b": "Why is the sunset red?", "same": false}
+{"a": "What is inflation in economics?", "b": "What is deflation in economics?", "same": false}
+{"a": "How do I reset my password?", "b": "How do I change my username?", "same": false}
+{"a": "What are the pros and cons of remote work?", "b": "What are the pros and cons of working in an office?", "same": false}
+{"a": "Compare renewable and non-renewable energy sources.", "b": "Compare solar and wind energy.", "same": false}
+{"a": "Who discovered penicillin?", "b": "Who discovered insulin?", "same": false}
+{"a": "What is the speed of light?", "b": "What is the speed of sound?", "same": false}
+{"a": "What causes earthquakes?", "b": "What causes tsunamis?", "same": false}
+{"a": "What is a black hole?", "b": "What is a neutron star?", "same": false}
+{"a": "What is the main function of the heart?", "b": "What is the main function of the liver?", "same": false}
+{"a": "Explain photosynthesis in simple terms for a child.", "b": "Explain photosynthesis in technical terms for a biology student.", "same": false}
+{"a": "Summarise the causes of World War I.", "b": "Summarise the causes of World War II.", "same": false}
+{"a": "What is the chemical symbol for gold?", "b": "What is the chemical symbol for silver?", "same": false}
+{"a": "Is coffee good for your health?", "b": "Is coffee bad for your health?", "same": false}
+{"a": "Why did the Roman Empire fall?", "b": "How did the Roman Empire rise to power?", "same": false}
+{"a": "What are the symptoms of dehydration?", "b": "How do you treat dehydration?", "same": false}
+{"a": "What is the role of the United Nations?", "b": "What is the role of NATO?", "same": false}
+{"a": "What is democracy?", "b": "What is a monarchy?", "same": false}
+{"a": "What are the main features of Python?", "b": "What are the main features of Java?", "same": false}
+{"a": "Who painted the Mona Lisa?", "b": "Who painted The Starry Night?", "same": false}
+{"a": "Why do leaves change colour in autumn?", "b": "Why do leaves fall in autumn?", "same": false}
+{"a": "What is the function of the mitochondria?", "b": "What is the function of the nucleus?", "same": false}
+{"a": "What are the risks of smoking?", "b": "How can I quit smoking?", "same": false}
+{"a": "Explain blockchain in one sentence.", "b": "Explain blockchain in detail.", "same": false}
+{"a": "What is cloud computing?", "b": "What is edge computing?", "same": false}
+{"a": "What is supply and demand?", "b": "What is a monopoly?", "same": false}
+{"a": "How does a vaccine work?", "b": "How does an antibiotic work?", "same": false}
+{"a": "Evaluate the impact of social media on teenagers.", "b": "Evaluate the impact of social media on elections.", "same": false}
+{"a": "What is the GDP of a country?", "b": "What is the GNP of a country?", "same": false}
+{"a": "How do airplanes stay in the air?", "b": "How do helicopters stay in the air?", "same": false}
+{"a": "What is the purpose of a firewall?", "b": "What is the purpose of an antivirus?", "same": false}
+{"a": "What is the ozone layer?", "b": "What is the greenhouse effect?", "same": false}
+{"a": "What is artificial intelligence?", "b": "What are the dangers of artificial intelligence?", "same": false}
+{"a": "Why is sleep important?", "b": "How much sleep do adults need?", "same": false}
+{"a": "What is the meaning of 'opportunity cost'?", "b": "What is the meaning of 'sunk cost'?", "same": false}
+{"a": "How many continents are there?", "b": "How many oceans are there?", "same": false}
+{"a": "Who is the CEO of Microsoft?", "b": "Who founded Microsoft?", "same": false}
+{"a": "What is an API?", "b": "What is an SDK?", "same": false}

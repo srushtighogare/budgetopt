@@ -19,7 +19,7 @@ The full design and the build roadmap are in [docs/plan.md](docs/plan.md).
 | 6 | Optimizer: NSGA-II multi-objective allocation, exact ILP/LP, allocation policies used by the router | **Done** |
 | 7 | Spend forecasting (ETS, calibrated intervals), budget and overrun alerts, anomaly detection | **Done** |
 | 8 | What-if simulator (replay history under other allocations, prices, volumes), savings and economic-feasibility report | **Done** |
-| 9 | Semantic cache | Next |
+| 9 | Semantic cache: local embeddings + pgvector, LLM-verified grey zone (precision 1.0, recall 96% on near-miss pairs) | **Done** |
 | 10 | React dashboard | Planned |
 | 11 | Benchmark and evaluation | Planned |
 
@@ -122,6 +122,24 @@ crosses its alert threshold, the router switches to the team's `savings` policy.
   priciest-model baseline, split into routing and cache savings, by model, task and team, with
   a daily series. Given the platform's own running cost it adds net monthly benefit and ROI,
   which is the report's economic-feasibility test.
+
+## Semantic cache
+
+Prompts with the same meaning reuse an earlier answer. The last user message is embedded
+locally with BAAI/bge-small-en-v1.5 (fastembed, ~2 ms; the 64 MB model downloads to
+`backend/.cache/` on first use) and matched with a pgvector HNSW index. Embeddings alone
+put opposites close together ("is coffee good / bad for you" = 0.947), so matching is two-stage:
+
+- similarity ≥ 0.97: served from cache
+- 0.85–0.97: a cheap verifier model confirms that one answer fits both (charged to the request)
+- below 0.85: miss
+
+A hit also needs the same context (system prompt, earlier turns, settings) and the same
+numbers. Only task types where similar questions share answers are cached (simple Q&A,
+analysis), and the cache is off for confidential teams. Cached prompts are stored encrypted
+and purged on expiry. Evaluation on 100 curated rewording/near-miss pairs is in
+`ml/eval/semantic_cache_report.md`: with a threshold alone (0.95) only 38% of rewordings
+hit, while the two-stage design reaches 96% with no wrong hits.
 
 ## Tests
 

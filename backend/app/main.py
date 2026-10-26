@@ -24,7 +24,7 @@ from app.api.v1 import (
     users,
 )
 from app.core.config import get_settings
-from app.services import scheduler
+from app.services import scheduler, semantic_cache
 from app.services.workload.analyzer import warm_up
 
 settings = get_settings()
@@ -33,6 +33,7 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     warm_up()  # load ML models before the first request
+    semantic_cache.warm_up()
     tasks = scheduler.start()
     yield
     for t in tasks:

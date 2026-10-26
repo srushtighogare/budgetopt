@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     cache_ttl_s: int = 86_400
     provider_timeout_s: float = 60.0
 
+    # Semantic cache (see app/services/semantic_cache.py)
+    semantic_cache_enabled: bool = True
+    semantic_cache_accept: float = 0.97   # at/above: serve from cache directly
+    semantic_cache_verify: float = 0.85   # between verify and accept: ask the verifier model
+    semantic_cache_verifier_model: str = "gemini-3.5-flash-lite"
+    semantic_cache_tasks: list[str] = ["simple_qa", "analysis"]
+
     # Background monitoring (forecasts, anomaly scans) inside the API process
     enable_scheduler: bool = True
     forecast_interval_s: int = 3600

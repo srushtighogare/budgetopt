@@ -37,6 +37,7 @@ from app.db.models import (
     Request,
     RequestStatus,
     RoutingDecision,
+    SemanticCacheEntry,
     TaskType,
     Team,
     User,
@@ -62,7 +63,7 @@ async def generate(days: int, budget: float | None = None, seed: int = 42) -> di
         if team:  # reset previous demo data
             ids = select(Request.id).where(Request.team_id == team.id)
             await db.execute(delete(RoutingDecision).where(RoutingDecision.request_id.in_(ids)))
-            for model in (Request, Forecast, Alert):
+            for model in (SemanticCacheEntry, Request, Forecast, Alert):
                 await db.execute(delete(model).where(model.team_id == team.id))
         else:
             team = Team(organization_id=org.id, name=DEMO_TEAM, monthly_budget=Decimal(1),

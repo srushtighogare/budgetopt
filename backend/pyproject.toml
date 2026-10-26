@@ -26,11 +26,15 @@ dependencies = [
     "ortools>=9.11",
     "statsmodels>=0.14",
     "pandas>=2.2",
+    "fastembed>=0.7",
+    "pgvector>=0.3",
 ]
 
 [project.optional-dependencies]
 ml = [
     "pandas>=2.2",
+    "fastembed>=0.7",
+    "pgvector>=0.3",
     "pyarrow>=16",
     "matplotlib>=3.9",
 ]

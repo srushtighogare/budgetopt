@@ -16,12 +16,21 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 
 from redis.asyncio import Redis
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.config import get_settings
 from app.core.security import hash_prompt
-from app.db.models import AllocationPolicy, Request, RequestStatus, RoutingDecision, Team
-from app.services import cache
+from app.db.models import (
+    AllocationPolicy,
+    LLMModel,
+    Request,
+    RequestStatus,
+    RoutingDecision,
+    Team,
+)
+from app.services import cache, semantic_cache
 from app.services.alerts import budget_alerts
 from app.services.budget import BudgetState, budget_status
 from app.services.pricing import compute_cost
@@ -31,7 +40,7 @@ from app.services.providers.registry import AdapterFactory, build_adapter
 from app.services.routing.breaker import CircuitBreaker, default_breaker
 from app.services.routing.executor import Attempt, execute_with_fallback
 from app.services.routing.router import AUTO, RoutingPlan, plan_route
-from app.services.workload.analyzer import WorkloadProfile, analyze
+from app.services.workload.analyzer import WorkloadProfile, analyze, request_text
 
 
 class UnknownModel(Exception):
@@ -182,6 +191,43 @@ async def handle(
                              model=hit.model, baseline_cost=saved, savings=saved,
                              workload=workload)
 
+    # 3b. Semantic cache: same meaning, same context, same numbers (eligible tasks only)
+    sem, sem_note, verifier_cost = None, None, Decimal(0)
+    if use_cache and semantic_cache.eligible(req.team, profile.task_type):
+        text = request_text(req.messages)
+        sem = (semantic_cache.context_key(req.team.id, req.route, req.messages, max_tokens,
+                                          req.temperature),
+               semantic_cache.embed(text), semantic_cache.numbers_in(text))
+
+        async def verifier(messages: list[ChatMessage]) -> tuple[str, Decimal]:
+            vm = await db.scalar(select(LLMModel).options(selectinload(LLMModel.provider))
+                                 .where(LLMModel.name == settings.semantic_cache_verifier_model))
+            if vm is None:
+                raise LookupError("verifier model not registered")
+            r = await execute_with_fallback(db, [vm], messages, max_tokens=512, timeout=15,
+                                            breaker=breaker, adapter_factory=adapter_factory)
+            if not r.succeeded:
+                raise RuntimeError("verifier call failed")
+            return r.completion.text, r.cost
+
+        found = await semantic_cache.lookup(db, req.team, *sem, prompt=text, verifier=verifier)
+        verifier_cost, sem_note = found.verifier_cost, found.note
+        if s_hit := found.hit:
+            saved = s_hit.original_cost - verifier_cost
+            how = (f", confirmed by verifier {s_hit.verified_by} for {_fmt(verifier_cost)}"
+                   if s_hit.verified_by else "")
+            why = (f"{profile.describe()} Served from semantic cache: same meaning as request "
+                   f"#{s_hit.original_request_id} (similarity {s_hit.similarity:.3f}{how}; "
+                   f"answered by {s_hit.model_name}); saved {_fmt(saved)}.")
+            rid = await _log(db, req, status=RequestStatus.CACHE_HIT, budget_state=state,
+                             explanation=why, model_id=s_hit.model_id, input_tokens=0,
+                             output_tokens=0, cost=verifier_cost,
+                             baseline_cost=s_hit.original_cost, savings=saved, profile=profile)
+            return GatewayResult(RequestStatus.CACHE_HIT, rid, why, state,
+                                 text=s_hit.response_text, model=s_hit.model_name,
+                                 cost=verifier_cost, baseline_cost=s_hit.original_cost,
+                                 savings=saved, workload=workload)
+
     # 4. Plan: constraints + ordering (the team's optimizer policy; its cost-saver policy
     #    once the budget alert threshold is crossed)
     policy_id = req.team.policy_id
@@ -222,12 +268,15 @@ async def handle(
 
     # 6. Price against the baseline and explain
     c, model = res.completion, res.model
+    res.cost += verifier_cost  # a rejected semantic-cache check is part of this request
     baseline_cost = (compute_cost(plan.baseline_pricing, c.input_tokens, c.output_tokens)
                      if plan.baseline_pricing else None)
     savings = baseline_cost - res.cost if baseline_cost is not None else None
     status = RequestStatus.FALLBACK_SUCCESS if res.fallback_used else RequestStatus.SUCCESS
 
     parts = [profile.describe(), f"Route '{req.route}', strategy: {plan.strategy}."]
+    if sem_note:
+        parts.append(f"Semantic cache: {sem_note} (verifier cost {_fmt(verifier_cost)}).")
     if rejected:
         parts.append(f"Rejected by constraints: {rejected}.")
     if res.fallback_used:
@@ -255,6 +304,12 @@ async def handle(
             text=c.text, model_id=model.id, model=model.name, input_tokens=c.input_tokens,
             output_tokens=c.output_tokens, original_cost=str(res.cost), original_request_id=rid,
         ), settings.cache_ttl_s)
+        # only cache complete answers semantically
+        if sem and normalize_finish(c.finish_reason) == "stop" and c.text.strip():
+            await semantic_cache.store(db, req.team, sem[0], profile.task_type, sem[1], sem[2],
+                                       prompt=request_text(req.messages), response_text=c.text,
+                                       model_id=model.id, model_name=model.name,
+                                       cost=res.cost - verifier_cost, request_id=rid)
 
     return GatewayResult(
         status, rid, why, state, text=c.text, model=model.name, input_tokens=c.input_tokens,

@@ -9,6 +9,9 @@ os.environ["DATABASE_URL"] = os.environ.get(
 )
 os.environ["REDIS_URL"] = os.environ.get("TEST_REDIS_URL", "redis://localhost:6380/15")
 os.environ["ENABLE_SCHEDULER"] = "false"
+# Off by default so tests never load the real embedding model; test_semantic_cache.py
+# switches it on with deterministic fake embeddings
+os.environ["SEMANTIC_CACHE_ENABLED"] = "false"
 os.environ.setdefault("FERNET_KEY", "TlUtFm5JnEXw2b0iY4Yqk0ZfVxH0lH0nZ8j3w3G0p3Q=")
 
 from collections.abc import AsyncIterator  # noqa: E402
@@ -34,6 +37,7 @@ async def clean_db() -> AsyncIterator[None]:
     async with engine.begin() as conn:
         await conn.execute(text("DROP SCHEMA public CASCADE"))
         await conn.execute(text("CREATE SCHEMA public"))
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.run_sync(Base.metadata.create_all)
     async with SessionLocal() as db:
         await seed(db)
