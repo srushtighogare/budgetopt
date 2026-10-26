@@ -227,6 +227,32 @@ class ModelPerformance(Base):
     )
 
 
+class ProfilingResult(TimestampMixin, Base):
+    """One evaluated answer from the offline quality profiling harness.
+
+    `model_performance` is the per-(model, task) aggregate of these rows, so every
+    quality number shown in the dashboard can be traced to individual judged answers.
+    """
+
+    __tablename__ = "profiling_results"
+    __table_args__ = (UniqueConstraint("model_id", "item_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    model_id: Mapped[int] = mapped_column(ForeignKey("llm_models.id"), index=True)
+    item_id: Mapped[str] = mapped_column(String(50))  # id in the fixed profiling set
+    task_type: Mapped[TaskType] = mapped_column(_enum(TaskType, "task_type"))
+    score: Mapped[float | None] = mapped_column(Float)  # 0-10
+    correct: Mapped[bool | None] = mapped_column(Boolean)  # gold-answer check, if any
+    judge: Mapped[str | None] = mapped_column(String(100))
+    judge_reason: Mapped[str | None] = mapped_column(Text)
+    input_tokens: Mapped[int | None] = mapped_column(Integer)
+    output_tokens: Mapped[int | None] = mapped_column(Integer)
+    latency_ms: Mapped[float | None] = mapped_column(Float)
+    cost: Mapped[Decimal] = mapped_column(Money, default=Decimal(0))
+    answer: Mapped[str | None] = mapped_column(Text)
+    error: Mapped[str | None] = mapped_column(Text)
+
+
 # --- Optimization ---
 
 class OptimizationRun(TimestampMixin, Base):

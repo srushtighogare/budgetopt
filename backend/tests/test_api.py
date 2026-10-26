@@ -15,6 +15,7 @@ from app.db.models import (
     Role,
     Team,
 )
+from app.seed import MODELS as SEED_MODELS
 from app.services.pricing import price_at
 from tests.conftest import login, make_user
 
@@ -155,7 +156,7 @@ async def test_api_key_shown_once(client, admin_headers, db):
 
 async def test_models_listed_with_pricing(client, admin_headers):
     models = (await client.get("/api/v1/models", headers=admin_headers)).json()
-    assert len(models) == 4
+    assert len(models) == len(SEED_MODELS)
     assert all(m["current_pricing"] is not None for m in models)
 
 

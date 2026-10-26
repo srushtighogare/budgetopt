@@ -17,6 +17,7 @@ from app.db.models import (
     RoutingDecision,
     Team,
 )
+from app.seed import MODELS as SEED_MODELS
 from app.services import rate_limit
 from app.services.privacy import redact
 from app.services.providers.base import (
@@ -32,7 +33,7 @@ from app.services.tokens import estimate_input_tokens
 from tests.conftest import login, make_user
 
 CHEAPEST = "openai/gpt-oss-20b"        # groq, $0.075 / $0.30 per 1M
-SECOND = "openai/gpt-oss-120b"         # groq, $0.15 / $0.60
+SECOND = "gemini-3.5-flash-lite"       # google, $0.10 / $0.40
 PRICIEST = "gemini-3.5-flash"          # google, $1.50 / $9.00 -> savings baseline
 
 
@@ -107,7 +108,7 @@ async def test_auto_routes_to_cheapest_eligible_and_explains(client, key, fake, 
     assert req.status == RequestStatus.SUCCESS and req.cost == Decimal("0.000135")
     assert req.prompt_text is None and len(req.prompt_hash) == 64  # privacy default
     d = await db.scalar(select(RoutingDecision).where(RoutingDecision.request_id == req.id))
-    assert len(d.candidates["considered"]) == 4
+    assert len(d.candidates["considered"]) == len(SEED_MODELS)
     assert d.candidates["attempts"][0]["outcome"] == "success"
 
 
@@ -159,7 +160,7 @@ async def test_revoked_key_rejected(client, admin_headers, db, fake):
 
 async def test_models_endpoint(client, key):
     ids = [m["id"] for m in (await client.get("/v1/models", headers=key)).json()["data"]]
-    assert ids[0] == "auto" and len(ids) == 5
+    assert ids[0] == "auto" and len(ids) == len(SEED_MODELS) + 1
 
 
 # --- Fallback & failures ---
@@ -174,7 +175,7 @@ async def test_fallback_to_next_cheapest(client, key, fake, db):
 
 
 async def test_all_models_failing_returns_502_and_is_logged(client, key, fake, db):
-    for name in (CHEAPEST, SECOND, "gemini-3.1-flash-lite", PRICIEST):
+    for _, name, *_ in SEED_MODELS:
         fake.outcomes[name] = ProviderUnavailable("x", "down", 503)
     r = await client.post("/v1/chat/completions", headers=key, json=chat())
     assert r.status_code == 502 and r.json()["error"]["code"] == "upstream_failed"

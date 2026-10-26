@@ -1,0 +1,49 @@
+"""Latency profiles per (model, task type) from observed calls.
+
+Combines live gateway traffic (`requests`, successful calls) with profiling calls
+(`profiling_results`) over a recent window, and stores p50/p95 in
+`model_performance`. Percentiles are computed by PostgreSQL (`percentile_cont`)
+so the numbers are exact over the window, not approximations.
+"""
+
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import func, literal, select, union_all
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.models import ModelPerformance, ProfilingResult, Request, RequestStatus
+
+MIN_SAMPLES = 3
+
+
+async def refresh_latency(db: AsyncSession, days: int = 14) -> int:
+    since = datetime.now(UTC) - timedelta(days=days)
+    live = select(Request.model_id.label("model_id"), Request.task_type.label("task_type"),
+                  Request.latency_ms.label("latency_ms"), literal("live").label("src")).where(
+        Request.created_at >= since, Request.latency_ms.is_not(None),
+        Request.model_id.is_not(None), Request.task_type.is_not(None),
+        Request.status.in_([RequestStatus.SUCCESS, RequestStatus.FALLBACK_SUCCESS]))
+    prof = select(ProfilingResult.model_id, ProfilingResult.task_type,
+                  ProfilingResult.latency_ms, literal("profiling")).where(
+        ProfilingResult.created_at >= since, ProfilingResult.latency_ms.is_not(None))
+    samples = union_all(live, prof).subquery()
+
+    rows = (await db.execute(
+        select(samples.c.model_id, samples.c.task_type,
+               func.percentile_cont(0.5).within_group(samples.c.latency_ms),
+               func.percentile_cont(0.95).within_group(samples.c.latency_ms),
+               func.count())
+        .group_by(samples.c.model_id, samples.c.task_type)
+        .having(func.count() >= MIN_SAMPLES)
+    )).all()
+    for model_id, task, p50, p95, _ in rows:
+        stmt = insert(ModelPerformance).values(model_id=model_id, task_type=task,
+                                               latency_p50_ms=round(p50, 1),
+                                               latency_p95_ms=round(p95, 1))
+        await db.execute(stmt.on_conflict_do_update(
+            index_elements=["model_id", "task_type"],
+            set_={"latency_p50_ms": stmt.excluded.latency_p50_ms,
+                  "latency_p95_ms": stmt.excluded.latency_p95_ms, "updated_at": func.now()}))
+    await db.commit()
+    return len(rows)

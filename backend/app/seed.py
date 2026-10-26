@@ -41,6 +41,11 @@ MODELS = [
     ("groq", "openai/gpt-oss-120b", "GPT-OSS 120B (Groq)", 131_072, 32_768, "0.15", "0.60"),
     ("google", "gemini-3.1-flash-lite", "Gemini 3.1 Flash-Lite", 1_048_576, 65_536, "0.25", "1.50"),
     ("google", "gemini-3.5-flash", "Gemini 3.5 Flash", 1_048_576, 65_536, "1.50", "9.00"),
+    # Approximate list prices for newer/preview models; update via POST /models/{id}/pricing
+    ("groq", "qwen/qwen3.8-27b", "Qwen 3.8 27B (Groq)", 131_072, 32_768, "0.29", "0.59"),
+    ("google", "gemini-3.5-flash-lite", "Gemini 3.5 Flash-Lite", 1_048_576, 65_536, "0.10", "0.40"),
+    ("google", "gemini-3-flash-preview", "Gemini 3 Flash (preview)", 1_048_576, 65_536,
+     "0.50", "3.00"),
 ]
 
 PROVIDER_KEYS = {

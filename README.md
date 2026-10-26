@@ -14,12 +14,19 @@ The full design and the build roadmap are in [docs/plan.md](docs/plan.md).
 | 1 | Foundation: FastAPI, PostgreSQL schema + Alembic, JWT auth, RBAC, teams, API keys, model and versioned pricing registry, audit log, CI | **Done** |
 | 2 | Provider adapters (Groq, Gemini, OpenAI, Anthropic), fallback executor, circuit breaker | **Done** |
 | 3 | OpenAI-compatible gateway, request and decision logging, exact cache, rate limits, PII redaction | **Done** |
-| 4 | Workload analysis ML: task classifier, complexity model, token estimator | Next |
-| 5 | Model profiling: LLM-as-judge quality, latency tracking | Planned |
-| 6 | Optimizer: NSGA-II and ILP allocation, constraint filter, explanations | Planned |
+| 4 | Workload analysis ML: task classifier, complexity model, token estimator | Classifier done; complexity & token models training on labelled data |
+| 5 | Model profiling: per-task quality via LLM judge + gold answers, latency percentiles | **Done** (profiles filling on free tiers) |
+| 6 | Optimizer: NSGA-II and ILP allocation, constraint filter, explanations | Next |
 | 7–9 | Forecasting, anomaly detection, what-if simulator, semantic cache | Planned |
 | 10 | React dashboard | Planned |
 | 11 | Benchmark and evaluation | Planned |
+
+## Models
+
+Seven models from two providers are registered (Groq: GPT-OSS 20B/120B, Qwen 3.8 27B;
+Google: Gemini 3.5 Flash, 3.5 Flash-Lite, 3.1 Flash-Lite, 3 Flash preview). They are
+interchangeable, and any model can be added through the API with its pricing. The development
+runs use free-tier quotas only.
 
 ## Tech stack
 
@@ -53,6 +60,19 @@ print(r.model_extra["budgetopt"])  # cost, savings vs baseline, budget state, ex
 
 `model="auto"` lets BudgetOpt choose the model. A registered model name requests that model, and the other eligible models serve as fallbacks. Over-budget teams get `402`, rate-limited callers get `429`, and every request appears in `GET /api/v1/requests` with an explanation of the routing decision.
 
+## Model profiling
+
+```bash
+cd backend
+.venv/bin/python -m app.services.profiling.cli quality --per-task 4   # resumable
+.venv/bin/python -m app.services.profiling.cli summary                # quality/latency matrix
+```
+
+Each model answers a fixed set of 64 prompts (8 per task type). Math answers are checked
+against gold answers. Other answers are graded 1–10 by a judge model, and a model never
+judges itself. Results are stored per answer and aggregated into per-task quality scores.
+Latency p50/p95 comes from live traffic plus profiling calls.
+
 ## Tests
 
 Tests run against a real PostgreSQL database (`budgetopt_test`) and Redis (db 15):
@@ -73,10 +93,12 @@ backend/
     db/          ORM schema and session
     schemas/     request/response models
     services/    pricing, budget, cache, rate_limit, privacy, tokens, providers/ (LLM
-                 adapters), routing/ (router, pipeline, fallback executor, breaker)
+                 adapters), routing/ (router, pipeline, fallback executor, breaker),
+                 workload/ (classifier, complexity, token estimates), profiling/
     seed.py      demo org, teams, admin, providers, models
   migrations/    Alembic migrations
   tests/
+ml/              datasets, labelling job, training and evaluation scripts (see ml/README.md)
 docs/            design plan, and later evaluation results
 docker-compose.yml
 ```

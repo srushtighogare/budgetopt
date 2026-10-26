@@ -38,6 +38,11 @@ sys.path.insert(0, str(ROOT.parent / "backend"))
 
 import httpx  # noqa: E402
 from app.core.config import get_settings  # noqa: E402
+from app.services.profiling.answers import (  # noqa: E402
+    contains_answer,
+    last_boxed,
+    parse_json,
+)
 from app.services.providers.adapters import GeminiAdapter, GroqAdapter  # noqa: E402
 from app.services.providers.base import ChatMessage, ProviderAdapter  # noqa: E402
 
@@ -331,12 +336,6 @@ def judge_messages(prompt: str, reference: str, candidate: str) -> list[ChatMess
         f"### CANDIDATE ANSWER\n{candidate[:6000]}"))]
 
 
-def parse_json(text: str):
-    text = text.strip()
-    m = re.search(r"(\[.*\]|\{.*\})", text, re.S)
-    return json.loads(m.group(1) if m else text)
-
-
 @cache
 def _gold_index(source: str) -> dict[str, str]:
     import pandas as pd
@@ -356,35 +355,6 @@ def gold_answer(row: dict) -> str | None:
     if src == "gsm8k" or src.startswith("math:"):
         return _gold_index(src).get(row["text"])
     return None
-
-
-def last_boxed(s: str) -> str | None:
-    i = s.rfind("\\boxed")
-    if i < 0:
-        return None
-    j = s.find("{", i)
-    depth, k = 0, j
-    while k < len(s):
-        depth += {"{": 1, "}": -1}.get(s[k], 0)
-        if depth == 0:
-            return s[j + 1:k]
-        k += 1
-    return None
-
-
-def norm_answer(a: str) -> str:
-    a = a.replace(",", "").replace("$", "").replace("\\!", "").replace(" ", "")
-    a = re.sub(r"\\text\{[^}]*\}", "", a)
-    return a.rstrip(".").lower()
-
-
-def contains_answer(text: str, gold: str) -> bool:
-    g = norm_answer(gold)
-    boxed = last_boxed(text)
-    if boxed is not None:
-        return norm_answer(boxed) == g
-    nums = re.findall(r"-?\d+(?:\.\d+)?", text.replace(",", ""))
-    return bool(nums) and norm_answer(nums[-1]) == g
 
 
 # --- stages ---
