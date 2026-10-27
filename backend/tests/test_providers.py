@@ -272,3 +272,16 @@ async def test_provider_key_is_write_only(client, admin_headers, db):
 
     r = await client.delete("/api/v1/providers/openai/key", headers=admin_headers)
     assert r.json()["has_api_key"] is False
+
+
+async def test_rate_limit_carries_retry_after():
+    groq = mock_client(lambda req: httpx.Response(429, text="slow down",
+                                                  headers={"retry-after": "7"}))
+    with pytest.raises(RateLimited) as info:
+        await GroqAdapter("k", groq).generate("m", MSGS)
+    assert info.value.retry_after_s == 7.0
+    gem = mock_client(lambda req: httpx.Response(
+        429, text='{"error": {"details": [{"retryDelay": "8638s"}]}}'))
+    with pytest.raises(RateLimited) as info:
+        await GeminiAdapter("k", gem).generate("m", MSGS)
+    assert info.value.retry_after_s == 8638.0

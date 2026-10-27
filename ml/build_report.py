@@ -84,6 +84,14 @@ Output-token estimator (target: tokens billed by the cheap model):
 | Model | MAE (tokens) |
 |---|---|
 {trows}
+
+**Reading the results.** The token estimator is clearly useful: about 27% lower error than
+per-task medians. The complexity model is not yet better than knowing the task type alone
+(ROC-AUC ≈ the task-prior baseline): with {m['n']} labelled prompts, the extra prompt features
+add little. It is still used because it gives each request a calibrated probability. The
+complexity bands are cut at the 50th and 85th percentiles of its predictions
+(`{cx.get('band_thresholds')}`), so the quality floors always separate the riskiest requests.
+More labelled data, especially for coding, math and analysis, is the way to improve it.
 """
 
 
@@ -139,6 +147,25 @@ built from profiling data only, never from benchmark answers.
 {rows}
 
 ![cost vs quality](../ml/eval/benchmark_cost_quality.png)
+
+**Reading the results.**
+
+- *Premium baseline.* Google's stronger Gemini models allow only 20 free requests a day, so
+  the premium baseline is {m['models'][-1]}, the most expensive model free tiers can serve at
+  this volume. The price spread between the four models is therefore small (about 4×);
+  against commercial premium models (≈20× and more) the same routing saves correspondingly more.
+- *A finding the benchmark produced.* The first run priced requests by price per token only.
+  The benchmark showed that GPT-OSS 20B, the cheapest per token, is a reasoning model that
+  writes about 2× more output tokens than the others, so it was not actually the cheapest per
+  request. The optimizer now scales each model's output by its measured answer length per
+  task (from the profiling set, not the benchmark). On the same matrix this moved the
+  balanced policy from quality 8.67 at $14.53/month to the figures above.
+- *Not yet optimal.* On these prompts one model (Gemini 3.5 Flash-Lite) was both the cheapest
+  and the best, which is unusual. BudgetOpt's profiles, from only 4 prompts per task type,
+  rated GPT-OSS 20B about as highly, so the policies still send it some traffic. Larger
+  profiling sets are the main lever for closing the remaining gap to the best single model and
+  the hindsight oracle. Because the cheapest model was also the best here, the "vs random mix"
+  column is not informative for this run.
 
 Details and per-task results: [`ml/eval/benchmark_report.md`](../ml/eval/benchmark_report.md).
 """

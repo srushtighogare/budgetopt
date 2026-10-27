@@ -95,6 +95,11 @@ def eval_complexity(X: np.ndarray, y: np.ndarray, tasks: list[str]) -> tuple[obj
             best, best_auc, best_p = (name, model), auc, p
     name, model = best
     model.fit(X, y)
+    # Bands relative to the predicted-risk distribution: the riskiest 15% of requests are
+    # "high", the next 35% "medium". Fixed cut-offs would put almost everything in "low"
+    # when the cheap model rarely fails overall.
+    band_thresholds = [round(float(np.quantile(best_p, 0.50)), 4),
+                       round(float(np.quantile(best_p, 0.85)), 4)]
 
     # Routing utility: send prompts below a threshold to the cheap model
     utility = []
@@ -106,7 +111,8 @@ def eval_complexity(X: np.ndarray, y: np.ndarray, tasks: list[str]) -> tuple[obj
             if to_cheap.any() else None,
         })
     return model, {"selected": name, "positive_rate": round(float(y.mean()), 3),
-                   "cv": results, "routing_utility": utility}
+                   "cv": results, "routing_utility": utility,
+                   "band_thresholds": band_thresholds}
 
 
 def eval_tokens(X: np.ndarray, out_tokens: np.ndarray, tasks: list[str]) -> tuple[object, dict]:
@@ -142,7 +148,8 @@ def main() -> None:
 
     cx_model, cx_metrics = eval_complexity(X, fail, tasks)
     te_model, te_metrics = eval_tokens(X, out_tokens, tasks)
-    joblib.dump({"model": cx_model, "trained_on": len(X), "metrics": cx_metrics},
+    joblib.dump({"model": cx_model, "trained_on": len(X), "metrics": cx_metrics,
+                 "band_thresholds": cx_metrics["band_thresholds"]},
                 ARTIFACTS / "complexity.joblib", compress=3)
     joblib.dump({"model": te_model, "trained_on": len(X), "metrics": te_metrics},
                 ARTIFACTS / "token_estimator.joblib", compress=3)

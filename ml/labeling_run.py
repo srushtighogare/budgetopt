@@ -64,7 +64,8 @@ TASKS = ["translation", "summarization", "simple_qa", "extraction", "creative_wr
 PRICES = {"openai/gpt-oss-20b": (0.075, 0.30), "openai/gpt-oss-120b": (0.15, 0.60),
           "gemini-3.5-flash": (1.50, 9.00), "gemini-3.1-flash-lite": (0.25, 1.50),
           # approximate list prices; only used for the paid-rate safety cap
-          "gemini-3-flash-preview": (0.50, 3.00), "qwen/qwen3.8-27b": (0.29, 0.59)}
+          "gemini-3-flash-preview": (0.50, 3.00), "qwen/qwen3.8-27b": (0.29, 0.59),
+          "gemma-4-26b-a4b-it": (0.0, 0.0)}
 
 # Training-set annotation: a different annotator from the OOD test set's (gpt-oss-120b)
 TRAIN_ANNOTATOR_ORDER = ["gemini-3.1-flash-lite", "openai/gpt-oss-120b"]
@@ -118,6 +119,7 @@ class Runner:
             "gemini-3.1-flash-lite": GeminiAdapter(s.google_api_key, self.client),
             "gemini-3-flash-preview": GeminiAdapter(s.google_api_key, self.client),
             "qwen/qwen3.8-27b": GroqAdapter(s.groq_api_key, self.client),
+            "gemma-4-26b-a4b-it": GeminiAdapter(s.google_api_key, self.client),
         }
         self.exhausted: set[str] = set()
         self.max_usd = max_usd
@@ -482,13 +484,17 @@ async def main() -> None:
     ap.add_argument("--labels-dir", help="write to another directory (smoke test)")
     ap.add_argument("--shard", default="0/1", help="k/n: judge only ids with id %% n == k")
     ap.add_argument("--judge-order", help="comma-separated judge models, overrides default")
+    ap.add_argument("--reference-order",
+                    help="comma-separated reference models, overrides default")
     args = ap.parse_args()
-    global LIMIT, LABELS, SHARD, JUDGE_ORDER
+    global LIMIT, LABELS, SHARD, JUDGE_ORDER, REFERENCE_ORDER
     LIMIT = args.limit
     k, n = args.shard.split("/")
     SHARD = (int(k), int(n))
     if args.judge_order:
         JUDGE_ORDER = args.judge_order.split(",")
+    if args.reference_order:
+        REFERENCE_ORDER = args.reference_order.split(",")
     if args.labels_dir:
         LABELS = Path(args.labels_dir)
     LABELS.mkdir(parents=True, exist_ok=True)

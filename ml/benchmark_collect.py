@@ -42,11 +42,21 @@ PER_TASK = 20
 MAX_CHARS = 1500
 SEED = 2027
 ANSWER_MAX_TOKENS = 1024
+SHARD = (0, 1)  # --shard k/n: this process judges prompts whose number % n == k
+# The judge reasons before replying and that reasoning shares the output budget; with 1024
+# tokens some verdicts came back empty
+JUDGE_MAX_TOKENS = 4096
 
+# Google's stronger Gemini models (3.5 Flash, 3 Flash preview) allow only 20 free requests
+# a day, too few for a 600-answer matrix, so the most expensive model that free tiers can
+# serve at this volume (Qwen 3.8 27B on Groq) is the premium baseline here.
 MODELS = ["openai/gpt-oss-20b", "gemini-3.5-flash-lite", "openai/gpt-oss-120b",
-          "gemini-3.5-flash"]
-JUDGES = ["qwen/qwen3.8-27b", "gemini-3-flash-preview"]  # deliberately outside MODELS
+          "qwen/qwen3.8-27b"]
+# One judge model for every answer, deliberately outside MODELS and from a different model
+# family than all of them (Gemma, Google's open model; generous free quota).
+JUDGES = ["gemma-4-26b-a4b-it"]
 lr.PRICES.setdefault("gemini-3.5-flash-lite", (0.10, 0.40))
+lr.PRICES.setdefault("gemma-4-26b-a4b-it", (0.0, 0.0))  # free; no paid-rate equivalent
 
 
 def read(name: str) -> list[dict]:
@@ -120,10 +130,13 @@ async def collect(r: lr.Runner, items: list[dict]) -> None:
 
 async def judge(r: lr.Runner, items: list[dict]) -> None:
     by_id = {it["bid"]: it for it in items}
-    done = {(s["bid"], s["model"]) for s in read("scores")}
+    # Only scores from the current judge (or gold answers) count; others are re-judged
+    done = {(s["bid"], s["model"]) for s in read("scores")
+            if s["judge"] in JUDGES or s["judge"] == "gold-answer"}
+    k, n = SHARD
     for a in read("answers"):
         key = (a["bid"], a["model"])
-        if key in done:
+        if key in done or a["model"] not in MODELS or int(a["bid"][1:]) % n != k:
             continue
         it = by_id[a["bid"]]
         if it["gold"]:
@@ -133,7 +146,7 @@ async def judge(r: lr.Runner, items: list[dict]) -> None:
             continue
         msgs = [ChatMessage("system", JUDGE_SYSTEM), ChatMessage("user", (
             f"### REQUEST\n{it['text'][:6000]}\n\n### ANSWER\n{a['text'][:8000]}"))]
-        c = await r.first_available(JUDGES, msgs, 1024)
+        c = await r.first_available(JUDGES, msgs, JUDGE_MAX_TOKENS)
         try:
             v = parse_json(c.text)
             score = float(v["score"])
@@ -147,7 +160,9 @@ async def judge(r: lr.Runner, items: list[dict]) -> None:
 
 
 def status(items: list[dict]) -> None:
-    a, s = read("answers"), read("scores")
+    a = [x for x in read("answers") if x["model"] in MODELS]
+    s = [x for x in read("scores") if x["model"] in MODELS
+         and (x["judge"] in JUDGES or x["judge"] == "gold-answer")]
     print(f"prompts {len(items)} | answers {len(a)}/{len(items) * len(MODELS)} | "
           f"scores {len(s)}/{len(items) * len(MODELS)}")
     for m in MODELS:
@@ -159,7 +174,11 @@ async def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--status", action="store_true")
     ap.add_argument("--max-usd", type=float, default=5.0)
+    ap.add_argument("--shard", default="0/1", help="k/n: judge a disjoint share of prompts")
+    ap.add_argument("--judge-only", action="store_true")
     args = ap.parse_args()
+    global SHARD
+    SHARD = tuple(int(x) for x in args.shard.split("/"))
     OUT.mkdir(parents=True, exist_ok=True)
     items = build_prompt_set()
     if args.status:
@@ -167,8 +186,11 @@ async def main() -> None:
     r = lr.Runner(args.max_usd)
     key = get_settings().google_api_key
     r.adapters["gemini-3.5-flash-lite"] = GeminiAdapter(key, r.client)
+    r.adapters["gemma-4-26b-a4b-it"] = GeminiAdapter(key, r.client)
     try:
-        for name, stage in (("answers", collect), ("judge", judge)):
+        stages = (("judge", judge),) if args.judge_only else (("answers", collect),
+                                                               ("judge", judge))
+        for name, stage in stages:
             print(f"== {name}")
             try:
                 await stage(r, items)

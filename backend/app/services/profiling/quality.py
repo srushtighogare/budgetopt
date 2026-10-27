@@ -43,7 +43,9 @@ log = logging.getLogger(__name__)
 PROFILING_SET = Path(__file__).parent / "profiling_set.jsonl"
 ANSWER_MAX_TOKENS = 1024
 JUDGE_MAX_TOKENS = 1024
-RETRIES = 3
+RETRIES = 8
+MAX_WAIT_S = 90          # per-minute limits: wait as long as the provider asks, up to this
+DAILY_WAIT_S = 600       # a suggested wait longer than this means a daily cap: stop
 
 JUDGE_SYSTEM = """You are a strict, impartial evaluator of AI assistant answers.
 Rate the ANSWER to the user's REQUEST from 1 to 10 for correctness, completeness,
@@ -90,10 +92,11 @@ async def _with_retries(call: Callable[[], Awaitable[Completion]],
     for attempt in range(RETRIES):
         try:
             return await call()
-        except RateLimited:
-            if attempt == RETRIES - 1:
+        except RateLimited as e:
+            wait = e.retry_after_s
+            if attempt == RETRIES - 1 or (wait is not None and wait > DAILY_WAIT_S):
                 raise
-            await sleep(20 * (attempt + 1))
+            await sleep(min(MAX_WAIT_S, (wait or 10 * (attempt + 1)) + 1))
     raise AssertionError("unreachable")
 
 

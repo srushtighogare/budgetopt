@@ -175,3 +175,34 @@ async def test_latency_ignores_synthetic_demo_rows(db):
                        task_type=TaskType.CODING, latency_ms=ms, status=RequestStatus.SUCCESS))
     await db.commit()
     assert await refresh_latency(db) == 0
+
+
+async def test_per_minute_limits_are_waited_out_daily_caps_are_not(db):
+    class Flaky(Router):
+        def __init__(self, fails, wait):
+            super().__init__()
+            self.left, self.wait = fails, wait
+
+        async def generate(self, model, messages, **kw):
+            if self.left:
+                self.left -= 1
+                raise RateLimited("groq", "limit", 429, retry_after_s=self.wait)
+            return await super().generate(model, messages, **kw)
+
+    waits = []
+
+    async def record(s):
+        waits.append(s)
+
+    minute = Flaky(fails=3, wait=12)
+    rep = await run_quality_profile(db, model_names=[CHEAP], judge_names=[JUDGE], per_task=1,
+                                    adapter_factory=lambda p: minute, sleep=record)
+    assert rep.answered == 8 and CHEAP not in rep.exhausted_models
+    assert waits[:3] == [13, 13, 13]  # provider's Retry-After + 1 s
+
+    await db.execute(ProfilingResult.__table__.delete())
+    await db.commit()
+    daily = Flaky(fails=99, wait=8000)
+    rep = await run_quality_profile(db, model_names=[CHEAP], judge_names=[JUDGE], per_task=1,
+                                    adapter_factory=lambda p: daily, sleep=record)
+    assert CHEAP in rep.exhausted_models and rep.answered == 0

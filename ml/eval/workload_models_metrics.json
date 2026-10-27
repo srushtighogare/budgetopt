@@ -1,0 +1,106 @@
+{
+  "n": 361,
+  "complexity": {
+    "selected": "logistic_regression",
+    "positive_rate": 0.186,
+    "cv": {
+      "task_prior_baseline": {
+        "roc_auc": 0.6634,
+        "brier": 0.1436
+      },
+      "hist_gradient_boosting": {
+        "roc_auc": 0.6449,
+        "brier": 0.1537
+      },
+      "logistic_regression": {
+        "roc_auc": 0.6629,
+        "brier": 0.1459
+      }
+    },
+    "routing_utility": [
+      {
+        "threshold": 0.2,
+        "share_to_cheap": 0.584,
+        "cheap_failure_rate_when_routed": 0.114
+      },
+      {
+        "threshold": 0.33,
+        "share_to_cheap": 0.856,
+        "cheap_failure_rate_when_routed": 0.175
+      },
+      {
+        "threshold": 0.5,
+        "share_to_cheap": 0.994,
+        "cheap_failure_rate_when_routed": 0.187
+      },
+      {
+        "threshold": 0.66,
+        "share_to_cheap": 1.0,
+        "cheap_failure_rate_when_routed": 0.186
+      }
+    ],
+    "band_thresholds": [
+      0.1657,
+      0.3245
+    ]
+  },
+  "token_estimator": {
+    "selected": "hist_gradient_boosting",
+    "median_output_tokens": 362.0,
+    "cv": {
+      "task_median_baseline": {
+        "mae_tokens": 276.9
+      },
+      "hist_gradient_boosting": {
+        "mae_tokens": 203.2,
+        "within_50pct": 0.632
+      },
+      "ridge": {
+        "mae_tokens": 209.1,
+        "within_50pct": 0.615
+      }
+    }
+  },
+  "per_task": {
+    "analysis": {
+      "n": 48,
+      "cheap_failure_rate": 0.333,
+      "median_output_tokens": 1024.0
+    },
+    "coding": {
+      "n": 24,
+      "cheap_failure_rate": 0.208,
+      "median_output_tokens": 984.0
+    },
+    "creative_writing": {
+      "n": 10,
+      "cheap_failure_rate": 0.1,
+      "median_output_tokens": 940.5
+    },
+    "extraction": {
+      "n": 25,
+      "cheap_failure_rate": 0.16,
+      "median_output_tokens": 324.0
+    },
+    "reasoning_math": {
+      "n": 33,
+      "cheap_failure_rate": 0.303,
+      "median_output_tokens": 383.0
+    },
+    "simple_qa": {
+      "n": 72,
+      "cheap_failure_rate": 0.278,
+      "median_output_tokens": 569.0
+    },
+    "summarization": {
+      "n": 51,
+      "cheap_failure_rate": 0.157,
+      "median_output_tokens": 275.0
+    },
+    "translation": {
+      "n": 98,
+      "cheap_failure_rate": 0.031,
+      "median_output_tokens": 113.0
+    }
+  }
+}

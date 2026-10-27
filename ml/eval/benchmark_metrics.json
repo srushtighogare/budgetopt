@@ -1,0 +1,913 @@
+{
+  "prompts": 151,
+  "models": [
+    "openai/gpt-oss-20b",
+    "gemini-3.5-flash-lite",
+    "openai/gpt-oss-120b",
+    "qwen/qwen3.8-27b"
+  ],
+  "monthly_requests": 100000,
+  "judges": {
+    "gemma-4-26b-a4b-it": 524,
+    "gold-answer": 80
+  },
+  "results": {
+    "all \u2192 openai/gpt-oss-20b": {
+      "quality": 8.52980132450331,
+      "cost_per_request": 0.00015519834437086093,
+      "monthly_cost": 15.519834437086093,
+      "p95_latency_ms": 1980.0,
+      "cost_reduction_vs_premium_pct": 31.696702985386537,
+      "quality_retained_vs_premium_pct": 94.49743213499633,
+      "quality_gain_vs_linear_mix": -1.0269017624211099
+    },
+    "all \u2192 gemini-3.5-flash-lite": {
+      "quality": 9.7682119205298,
+      "cost_per_request": 0.00012646821192052973,
+      "monthly_cost": 12.646821192052974,
+      "p95_latency_ms": 27119.6,
+      "cost_reduction_vs_premium_pct": 44.34092788339773,
+      "quality_retained_vs_premium_pct": 108.21716801173882,
+      "quality_gain_vs_linear_mix": 0.0
+    },
+    "all \u2192 openai/gpt-oss-120b": {
+      "quality": 8.907284768211921,
+      "cost_per_request": 0.0003024774834437085,
+      "monthly_cost": 30.24774834437085,
+      "p95_latency_ms": 2623.4,
+      "cost_reduction_vs_premium_pct": -33.12132597573947,
+      "quality_retained_vs_premium_pct": 98.67938371239913,
+      "quality_gain_vs_linear_mix": -0.11920529801324342
+    },
+    "all \u2192 qwen/qwen3.8-27b": {
+      "quality": 9.026490066225165,
+      "cost_per_request": 0.00022721940397350994,
+      "monthly_cost": 22.721940397350995,
+      "p95_latency_ms": 2150.3,
+      "cost_reduction_vs_premium_pct": 0.0,
+      "quality_retained_vs_premium_pct": 100.0,
+      "quality_gain_vs_linear_mix": 0.0
+    },
+    "random": {
+      "quality": 9.05794701986755,
+      "cost_per_request": 0.0002028408609271523,
+      "monthly_cost": 20.28408609271523,
+      "p95_latency_ms": 22116.9,
+      "cost_reduction_vs_premium_pct": 10.729076223261181,
+      "quality_retained_vs_premium_pct": 100.34849596478357,
+      "quality_gain_vs_linear_mix": -0.14801584251154232
+    },
+    "keyword router (old prototype)": {
+      "quality": 8.609271523178808,
+      "cost_per_request": 0.00016207327814569535,
+      "monthly_cost": 16.207327814569535,
+      "p95_latency_ms": 2047.2,
+      "cost_reduction_vs_premium_pct": 28.67102223162665,
+      "quality_retained_vs_premium_pct": 95.37784299339694,
+      "quality_gain_vs_linear_mix": -0.8968188759571625
+    },
+    "oracle (hindsight)": {
+      "quality": 9.821192052980132,
+      "cost_per_request": 0.00011562238410596024,
+      "monthly_cost": 11.562238410596024,
+      "p95_latency_ms": 26290.7,
+      "cost_reduction_vs_premium_pct": 49.11421204174978,
+      "quality_retained_vs_premium_pct": 108.80410858400587,
+      "quality_gain_vs_linear_mix": 0.052980132450331396
+    },
+    "BudgetOpt cheapest-eligible (no policy)": {
+      "quality": 9.205298013245033,
+      "cost_per_request": 0.00013318294701986758,
+      "monthly_cost": 13.318294701986758,
+      "p95_latency_ms": 25806.9,
+      "cost_reduction_vs_premium_pct": 41.38575108867264,
+      "quality_retained_vs_premium_pct": 101.98092443140133,
+      "quality_gain_vs_linear_mix": -0.5134805887546374
+    },
+    "BudgetOpt cost_saver": {
+      "quality": 9.205298013245033,
+      "cost_per_request": 0.00013318294701986758,
+      "monthly_cost": 13.318294701986758,
+      "p95_latency_ms": 25806.9,
+      "cost_reduction_vs_premium_pct": 41.38575108867264,
+      "quality_retained_vs_premium_pct": 101.98092443140133,
+      "quality_gain_vs_linear_mix": -0.5134805887546374
+    },
+    "BudgetOpt quality_first": {
+      "quality": 9.28476821192053,
+      "cost_per_request": 0.0001286021523178808,
+      "monthly_cost": 12.860215231788079,
+      "p95_latency_ms": 25868.0,
+      "cost_reduction_vs_premium_pct": 43.40177376185984,
+      "quality_retained_vs_premium_pct": 102.86133528980193,
+      "quality_gain_vs_linear_mix": -0.4677338177757555
+    },
+    "BudgetOpt balanced": {
+      "quality": 9.178409933774835,
+      "cost_per_request": 0.00014050739659271527,
+      "monthly_cost": 14.050739659271526,
+      "p95_latency_ms": 24694.6,
+      "cost_reduction_vs_premium_pct": 38.162236967624416,
+      "quality_retained_vs_premium_pct": 101.68304475421866,
+      "quality_gain_vs_linear_mix": -0.48644668270553204
+    }
+  },
+  "budgetopt_curve": [
+    {
+      "quality": 9.205298013245033,
+      "cost_per_request": 0.00013318294701986758,
+      "monthly_cost": 13.318294701986758,
+      "p95_latency_ms": 25806.9,
+      "cost_reduction_vs_premium_pct": 41.38575108867264,
+      "quality_retained_vs_premium_pct": 101.98092443140133,
+      "quality_gain_vs_linear_mix": -0.5134805887546374
+    },
+    {
+      "quality": 9.206360264900663,
+      "cost_per_request": 0.00013446982566556295,
+      "monthly_cost": 13.446982566556295,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.198273509933776,
+      "cost_per_request": 0.00013432440822847683,
+      "monthly_cost": 13.432440822847683,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.176801986754967,
+      "cost_per_request": 0.00013655655993377485,
+      "monthly_cost": 13.655655993377485,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.200751273736646,
+      "cost_per_request": 0.0001355090358658439,
+      "monthly_cost": 13.55090358658439,
+      "p95_latency_ms": 24694.6
+    },
+    {
+      "quality": 9.22932715231789,
+      "cost_per_request": 0.00013245280653642385,
+      "monthly_cost": 13.245280653642386,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.225579470198673,
+      "cost_per_request": 0.00013162098769205303,
+      "monthly_cost": 13.162098769205302,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.256279470198674,
+      "cost_per_request": 0.00013026350074503315,
+      "monthly_cost": 13.026350074503315,
+      "p95_latency_ms": 25868.0
+    },
+    {
+      "quality": 9.27239867549669,
+      "cost_per_request": 0.00012902640182119212,
+      "monthly_cost": 12.902640182119212,
+      "p95_latency_ms": 25868.0
+    },
+    {
+      "quality": 9.274790728476821,
+      "cost_per_request": 0.00012848483374172185,
+      "monthly_cost": 12.848483374172185,
+      "p95_latency_ms": 25868.0
+    },
+    {
+      "quality": 9.28476821192053,
+      "cost_per_request": 0.0001286021523178808,
+      "monthly_cost": 12.860215231788079,
+      "p95_latency_ms": 25868.0,
+      "cost_reduction_vs_premium_pct": 43.40177376185984,
+      "quality_retained_vs_premium_pct": 102.86133528980193,
+      "quality_gain_vs_linear_mix": -0.4677338177757555
+    },
+    {
+      "quality": 9.213284768211924,
+      "cost_per_request": 0.0001310430108874173,
+      "monthly_cost": 13.104301088741732,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.233227814569537,
+      "cost_per_request": 0.00013211825629139072,
+      "monthly_cost": 13.211825629139073,
+      "p95_latency_ms": 25868.0
+    },
+    {
+      "quality": 9.162631125827815,
+      "cost_per_request": 0.00014049320469536425,
+      "monthly_cost": 14.049320469536426,
+      "p95_latency_ms": 24110.6
+    },
+    {
+      "quality": 9.1784,
+      "cost_per_request": 0.0001365090202516556,
+      "monthly_cost": 13.650902025165559,
+      "p95_latency_ms": 24694.6
+    },
+    {
+      "quality": 9.206493377483447,
+      "cost_per_request": 0.0001378492234139073,
+      "monthly_cost": 13.78492234139073,
+      "p95_latency_ms": 25868.0
+    },
+    {
+      "quality": 9.150796026490065,
+      "cost_per_request": 0.00013820476729801325,
+      "monthly_cost": 13.820476729801324,
+      "p95_latency_ms": 24694.6
+    },
+    {
+      "quality": 9.191228094928698,
+      "cost_per_request": 0.00013902037030292996,
+      "monthly_cost": 13.902037030292995,
+      "p95_latency_ms": 24110.6
+    },
+    {
+      "quality": 9.201120529801319,
+      "cost_per_request": 0.0001388850775132451,
+      "monthly_cost": 13.88850775132451,
+      "p95_latency_ms": 25868.0
+    },
+    {
+      "quality": 9.128993544586248,
+      "cost_per_request": 0.0001394339974691734,
+      "monthly_cost": 13.94339974691734,
+      "p95_latency_ms": 24694.6
+    },
+    {
+      "quality": 9.118519867549669,
+      "cost_per_request": 0.00013321377690397355,
+      "monthly_cost": 13.321377690397355,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.174025165562911,
+      "cost_per_request": 0.00013665862416556283,
+      "monthly_cost": 13.665862416556283,
+      "p95_latency_ms": 25868.0
+    },
+    {
+      "quality": 9.178409933774835,
+      "cost_per_request": 0.00014050739659271527,
+      "monthly_cost": 14.050739659271526,
+      "p95_latency_ms": 24694.6,
+      "cost_reduction_vs_premium_pct": 38.162236967624416,
+      "quality_retained_vs_premium_pct": 101.68304475421866,
+      "quality_gain_vs_linear_mix": -0.48644668270553204
+    },
+    {
+      "quality": 9.160537748344371,
+      "cost_per_request": 0.00014165959605960262,
+      "monthly_cost": 14.165959605960262,
+      "p95_latency_ms": 24694.6
+    },
+    {
+      "quality": 9.080787417218543,
+      "cost_per_request": 0.00014326395362913903,
+      "monthly_cost": 14.326395362913903,
+      "p95_latency_ms": 23947.3
+    },
+    {
+      "quality": 9.101096688741725,
+      "cost_per_request": 0.00014078713240066228,
+      "monthly_cost": 14.078713240066229,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.134107284768215,
+      "cost_per_request": 0.00014147886633774831,
+      "monthly_cost": 14.147886633774831,
+      "p95_latency_ms": 24694.6
+    },
+    {
+      "quality": 9.146803311258273,
+      "cost_per_request": 0.00014469115277814573,
+      "monthly_cost": 14.469115277814572,
+      "p95_latency_ms": 25868.0
+    },
+    {
+      "quality": 9.11881147408438,
+      "cost_per_request": 0.00014598182851099622,
+      "monthly_cost": 14.598182851099622,
+      "p95_latency_ms": 24066.7
+    },
+    {
+      "quality": 9.093174834437084,
+      "cost_per_request": 0.00014425332710596027,
+      "monthly_cost": 14.425332710596027,
+      "p95_latency_ms": 23150.6
+    },
+    {
+      "quality": 9.078850331125826,
+      "cost_per_request": 0.0001440933938211921,
+      "monthly_cost": 14.40933938211921,
+      "p95_latency_ms": 23150.6
+    },
+    {
+      "quality": 9.125533380424134,
+      "cost_per_request": 0.00014699730199140514,
+      "monthly_cost": 14.699730199140514,
+      "p95_latency_ms": 23406.6
+    },
+    {
+      "quality": 9.034208609271523,
+      "cost_per_request": 0.00014965861605960263,
+      "monthly_cost": 14.965861605960264,
+      "p95_latency_ms": 24066.7
+    },
+    {
+      "quality": 9.014674172185426,
+      "cost_per_request": 0.00013655029864900663,
+      "monthly_cost": 13.655029864900664,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.077737086092714,
+      "cost_per_request": 0.0001297089329801325,
+      "monthly_cost": 12.97089329801325,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.067328476821194,
+      "cost_per_request": 0.00014753529613907286,
+      "monthly_cost": 14.753529613907286,
+      "p95_latency_ms": 22219.2
+    },
+    {
+      "quality": 9.071920529801329,
+      "cost_per_request": 0.00013012711796357615,
+      "monthly_cost": 13.012711796357614,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.05544834437086,
+      "cost_per_request": 0.00013140321113245035,
+      "monthly_cost": 13.140321113245035,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.023132450331131,
+      "cost_per_request": 0.00013546108115562917,
+      "monthly_cost": 13.546108115562918,
+      "p95_latency_ms": 24066.7
+    },
+    {
+      "quality": 9.054112582781462,
+      "cost_per_request": 0.0001379067162119205,
+      "monthly_cost": 13.79067162119205,
+      "p95_latency_ms": 24110.6
+    },
+    {
+      "quality": 9.037597350993376,
+      "cost_per_request": 0.00015417949954635762,
+      "monthly_cost": 15.417949954635763,
+      "p95_latency_ms": 24110.6
+    },
+    {
+      "quality": 8.977978807947023,
+      "cost_per_request": 0.0001520084460264901,
+      "monthly_cost": 15.20084460264901,
+      "p95_latency_ms": 22524.6
+    },
+    {
+      "quality": 9.02165562913908,
+      "cost_per_request": 0.000136833213897351,
+      "monthly_cost": 13.6833213897351,
+      "p95_latency_ms": 23947.3
+    },
+    {
+      "quality": 9.0446953642384,
+      "cost_per_request": 0.00013044838867549673,
+      "monthly_cost": 13.044838867549673,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.116467549668874,
+      "cost_per_request": 0.00014590646967549675,
+      "monthly_cost": 14.590646967549674,
+      "p95_latency_ms": 23406.6
+    },
+    {
+      "quality": 9.087112582781456,
+      "cost_per_request": 0.00013126884080132454,
+      "monthly_cost": 13.126884080132454,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.085015231788079,
+      "cost_per_request": 0.00013205312251986757,
+      "monthly_cost": 13.205312251986758,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.11911523178808,
+      "cost_per_request": 0.0001545387591821192,
+      "monthly_cost": 15.45387591821192,
+      "p95_latency_ms": 22283.0
+    },
+    {
+      "quality": 9.011136555844933,
+      "cost_per_request": 0.0001352838397394259,
+      "monthly_cost": 13.52838397394259,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 8.980769536423841,
+      "cost_per_request": 0.00016333007822185428,
+      "monthly_cost": 16.33300782218543,
+      "p95_latency_ms": 20684.6
+    },
+    {
+      "quality": 9.07690132450331,
+      "cost_per_request": 0.00015379432117218546,
+      "monthly_cost": 15.379432117218546,
+      "p95_latency_ms": 23150.6
+    },
+    {
+      "quality": 9.049637748344372,
+      "cost_per_request": 0.00013719407029801325,
+      "monthly_cost": 13.719407029801324,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 8.979702423156224,
+      "cost_per_request": 0.00013953024063201956,
+      "monthly_cost": 13.953024063201957,
+      "p95_latency_ms": 24066.7
+    },
+    {
+      "quality": 8.994768874172184,
+      "cost_per_request": 0.000139351376897351,
+      "monthly_cost": 13.935137689735098,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.045827814569536,
+      "cost_per_request": 0.00015756331840066225,
+      "monthly_cost": 15.756331840066226,
+      "p95_latency_ms": 23150.6
+    },
+    {
+      "quality": 9.097350993377475,
+      "cost_per_request": 0.00014913690377483447,
+      "monthly_cost": 14.913690377483448,
+      "p95_latency_ms": 23947.3
+    },
+    {
+      "quality": 9.030903311258287,
+      "cost_per_request": 0.000137063088834437,
+      "monthly_cost": 13.7063088834437,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 8.898184768211925,
+      "cost_per_request": 0.00014154963491390724,
+      "monthly_cost": 14.154963491390724,
+      "p95_latency_ms": 23150.6
+    },
+    {
+      "quality": 9.079909141734843,
+      "cost_per_request": 0.0001478399777155007,
+      "monthly_cost": 14.78399777155007,
+      "p95_latency_ms": 23406.6
+    },
+    {
+      "quality": 9.007140514051406,
+      "cost_per_request": 0.0001567019202776851,
+      "monthly_cost": 15.67019202776851,
+      "p95_latency_ms": 23947.3
+    },
+    {
+      "quality": 9.010994039735104,
+      "cost_per_request": 0.00015608576300993373,
+      "monthly_cost": 15.608576300993372,
+      "p95_latency_ms": 24066.7
+    },
+    {
+      "quality": 9.032411920529805,
+      "cost_per_request": 0.00015267726696026486,
+      "monthly_cost": 15.267726696026486,
+      "p95_latency_ms": 23406.6
+    },
+    {
+      "quality": 9.017860264900662,
+      "cost_per_request": 0.00015782592944039737,
+      "monthly_cost": 15.782592944039736,
+      "p95_latency_ms": 19830.5
+    },
+    {
+      "quality": 8.980987417218543,
+      "cost_per_request": 0.00013751389749668878,
+      "monthly_cost": 13.751389749668878,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 9.032240677710158,
+      "cost_per_request": 0.00015335696071683725,
+      "monthly_cost": 15.335696071683724,
+      "p95_latency_ms": 23150.6
+    },
+    {
+      "quality": 9.029127814569538,
+      "cost_per_request": 0.00015410217938410594,
+      "monthly_cost": 15.410217938410595,
+      "p95_latency_ms": 23150.6
+    },
+    {
+      "quality": 8.967182119205296,
+      "cost_per_request": 0.00016875288990397358,
+      "monthly_cost": 16.875288990397358,
+      "p95_latency_ms": 18642.3
+    },
+    {
+      "quality": 9.042034437086096,
+      "cost_per_request": 0.0001585039919536424,
+      "monthly_cost": 15.85039919536424,
+      "p95_latency_ms": 23150.6
+    },
+    {
+      "quality": 9.01889205298013,
+      "cost_per_request": 0.00015626533552317876,
+      "monthly_cost": 15.626533552317877,
+      "p95_latency_ms": 22219.2
+    },
+    {
+      "quality": 8.896511920529795,
+      "cost_per_request": 0.00013124100052980137,
+      "monthly_cost": 13.124100052980136,
+      "p95_latency_ms": 24110.6
+    },
+    {
+      "quality": 8.998236423841048,
+      "cost_per_request": 0.00016482080667880794,
+      "monthly_cost": 16.482080667880794,
+      "p95_latency_ms": 20853.8
+    },
+    {
+      "quality": 8.927850331125825,
+      "cost_per_request": 0.0001271785189602649,
+      "monthly_cost": 12.71785189602649,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 8.935324139771454,
+      "cost_per_request": 0.00015195152517855933,
+      "monthly_cost": 15.195152517855933,
+      "p95_latency_ms": 23150.6
+    },
+    {
+      "quality": 8.971128476821184,
+      "cost_per_request": 0.00014601489412251661,
+      "monthly_cost": 14.601489412251661,
+      "p95_latency_ms": 22219.2
+    },
+    {
+      "quality": 8.863466887417216,
+      "cost_per_request": 0.00013649024465231787,
+      "monthly_cost": 13.649024465231786,
+      "p95_latency_ms": 23150.6
+    },
+    {
+      "quality": 8.852390066225158,
+      "cost_per_request": 0.00013486161909602646,
+      "monthly_cost": 13.486161909602647,
+      "p95_latency_ms": 23150.6
+    },
+    {
+      "quality": 8.936742020566152,
+      "cost_per_request": 0.0001526475473241722,
+      "monthly_cost": 15.26475473241722,
+      "p95_latency_ms": 22219.2
+    },
+    {
+      "quality": 8.891434437086094,
+      "cost_per_request": 0.00013515259762251656,
+      "monthly_cost": 13.515259762251656,
+      "p95_latency_ms": 25806.9
+    },
+    {
+      "quality": 8.837028476821184,
+      "cost_per_request": 0.00013740819276821184,
+      "monthly_cost": 13.740819276821185,
+      "p95_latency_ms": 23139.5
+    },
+    {
+      "quality": 8.946149006622514,
+      "cost_per_request": 0.0001652503818609272,
+      "monthly_cost": 16.52503818609272,
+      "p95_latency_ms": 20853.8
+    },
+    {
+      "quality": 8.837790728476826,
+      "cost_per_request": 0.00013796247260264898,
+      "monthly_cost": 13.796247260264899,
+      "p95_latency_ms": 23139.5
+    },
+    {
+      "quality": 8.904246976957936,
+      "cost_per_request": 0.0001552683190826232,
+      "monthly_cost": 15.526831908262318,
+      "p95_latency_ms": 20859.2
+    },
+    {
+      "quality": 8.931468211920532,
+      "cost_per_request": 0.0001662565623443709,
+      "monthly_cost": 16.62565623443709,
+      "p95_latency_ms": 19620.9
+    },
+    {
+      "quality": 8.940901324503313,
+      "cost_per_request": 0.00016952740058278148,
+      "monthly_cost": 16.95274005827815,
+      "p95_latency_ms": 18642.3
+    },
+    {
+      "quality": 8.947139369963484,
+      "cost_per_request": 0.00016961538627975386,
+      "monthly_cost": 16.961538627975386,
+      "p95_latency_ms": 18642.3
+    },
+    {
+      "quality": 8.778488741721855,
+      "cost_per_request": 0.000148605030602649,
+      "monthly_cost": 14.8605030602649,
+      "p95_latency_ms": 23406.6
+    },
+    {
+      "quality": 8.744889403973508,
+      "cost_per_request": 0.0001464718218543046,
+      "monthly_cost": 14.64718218543046,
+      "p95_latency_ms": 22283.0
+    },
+    {
+      "quality": 8.90454039735099,
+      "cost_per_request": 0.00016782086663245035,
+      "monthly_cost": 16.782086663245035,
+      "p95_latency_ms": 17473.7
+    },
+    {
+      "quality": 8.755962913907279,
+      "cost_per_request": 0.0001409059058907284,
+      "monthly_cost": 14.090590589072841,
+      "p95_latency_ms": 22283.0
+    },
+    {
+      "quality": 8.908218727663657,
+      "cost_per_request": 0.0001754377432064939,
+      "monthly_cost": 17.54377432064939,
+      "p95_latency_ms": 16879.3
+    },
+    {
+      "quality": 8.91569072847682,
+      "cost_per_request": 0.00017981692340066224,
+      "monthly_cost": 17.981692340066225,
+      "p95_latency_ms": 16879.3
+    },
+    {
+      "quality": 8.75740877829505,
+      "cost_per_request": 0.00015386390917964386,
+      "monthly_cost": 15.386390917964386,
+      "p95_latency_ms": 19830.5
+    },
+    {
+      "quality": 8.866654952120681,
+      "cost_per_request": 0.00017860896084953982,
+      "monthly_cost": 17.860896084953982,
+      "p95_latency_ms": 16025.4
+    },
+    {
+      "quality": 8.83511986754967,
+      "cost_per_request": 0.00018312477548675492,
+      "monthly_cost": 18.312477548675492,
+      "p95_latency_ms": 18642.3
+    },
+    {
+      "quality": 8.84507711255365,
+      "cost_per_request": 0.00018028278069677728,
+      "monthly_cost": 18.02827806967773,
+      "p95_latency_ms": 15269.2
+    },
+    {
+      "quality": 8.660687417218544,
+      "cost_per_request": 0.000154666025807947,
+      "monthly_cost": 15.466602580794701,
+      "p95_latency_ms": 21352.3
+    },
+    {
+      "quality": 8.741337748344375,
+      "cost_per_request": 0.00017348908701324506,
+      "monthly_cost": 17.348908701324504,
+      "p95_latency_ms": 16004.3
+    },
+    {
+      "quality": 8.852637086092722,
+      "cost_per_request": 0.00018490201584105953,
+      "monthly_cost": 18.490201584105954,
+      "p95_latency_ms": 7119.3
+    },
+    {
+      "quality": 8.641301324503312,
+      "cost_per_request": 0.00015825558699337748,
+      "monthly_cost": 15.825558699337748,
+      "p95_latency_ms": 20853.8
+    },
+    {
+      "quality": 8.626686092715234,
+      "cost_per_request": 0.00016031868831788078,
+      "monthly_cost": 16.031868831788078,
+      "p95_latency_ms": 19830.5
+    },
+    {
+      "quality": 8.671727384148998,
+      "cost_per_request": 0.00016673218144056594,
+      "monthly_cost": 16.673218144056595,
+      "p95_latency_ms": 17203.0
+    },
+    {
+      "quality": 8.657249668874172,
+      "cost_per_request": 0.0001696576610960265,
+      "monthly_cost": 16.96576610960265,
+      "p95_latency_ms": 17203.0
+    },
+    {
+      "quality": 8.6630880794702,
+      "cost_per_request": 0.00016233635574172185,
+      "monthly_cost": 16.233635574172183,
+      "p95_latency_ms": 18642.3
+    },
+    {
+      "quality": 8.743047682119212,
+      "cost_per_request": 0.00018323653896357606,
+      "monthly_cost": 18.323653896357605,
+      "p95_latency_ms": 2251.0
+    },
+    {
+      "quality": 8.654009626087065,
+      "cost_per_request": 0.00016314667920421636,
+      "monthly_cost": 16.314667920421638,
+      "p95_latency_ms": 15767.4
+    },
+    {
+      "quality": 8.595052317880794,
+      "cost_per_request": 0.00016800361958278147,
+      "monthly_cost": 16.800361958278145,
+      "p95_latency_ms": 8439.9
+    },
+    {
+      "quality": 8.65339668874172,
+      "cost_per_request": 0.00016139705982119203,
+      "monthly_cost": 16.139705982119203,
+      "p95_latency_ms": 13412.1
+    },
+    {
+      "quality": 8.688090066225168,
+      "cost_per_request": 0.00018328837230463573,
+      "monthly_cost": 18.328837230463574,
+      "p95_latency_ms": 2253.4
+    },
+    {
+      "quality": 8.645783387886375,
+      "cost_per_request": 0.00016738893990419894,
+      "monthly_cost": 16.738893990419893,
+      "p95_latency_ms": 7696.2
+    },
+    {
+      "quality": 8.613437748344372,
+      "cost_per_request": 0.00016561927946357616,
+      "monthly_cost": 16.561927946357617,
+      "p95_latency_ms": 10418.5
+    },
+    {
+      "quality": 8.569652317880795,
+      "cost_per_request": 0.00017086432339072854,
+      "monthly_cost": 17.086432339072854,
+      "p95_latency_ms": 2190.8
+    },
+    {
+      "quality": 8.59745134387611,
+      "cost_per_request": 0.00016804107866089788,
+      "monthly_cost": 16.804107866089787,
+      "p95_latency_ms": 2224.2
+    },
+    {
+      "quality": 8.560941059602648,
+      "cost_per_request": 0.00017132704663907282,
+      "monthly_cost": 17.132704663907283,
+      "p95_latency_ms": 2190.8
+    },
+    {
+      "quality": 8.561001986754967,
+      "cost_per_request": 0.00017169961247682114,
+      "monthly_cost": 17.169961247682114,
+      "p95_latency_ms": 2150.3
+    },
+    {
+      "quality": 8.567078807947016,
+      "cost_per_request": 0.00017042080892052977,
+      "monthly_cost": 17.042080892052976,
+      "p95_latency_ms": 2150.2
+    },
+    {
+      "quality": 8.544199337748346,
+      "cost_per_request": 0.00017486487819867548,
+      "monthly_cost": 17.48648781986755,
+      "p95_latency_ms": 2132.9
+    },
+    {
+      "quality": 8.53821523178808,
+      "cost_per_request": 0.0001757174442980132,
+      "monthly_cost": 17.571744429801317,
+      "p95_latency_ms": 2047.2
+    },
+    {
+      "quality": 8.536423841059603,
+      "cost_per_request": 0.00017622824503311251,
+      "monthly_cost": 17.62282450331125,
+      "p95_latency_ms": 2047.2
+    }
+  ],
+  "per_task": {
+    "analysis": {
+      "n": 20,
+      "budgetopt_balanced": 9.44,
+      "premium": 10.0,
+      "cheapest": 8.55
+    },
+    "coding": {
+      "n": 20,
+      "budgetopt_balanced": 10.0,
+      "premium": 10.0,
+      "cheapest": 8.9
+    },
+    "creative_writing": {
+      "n": 20,
+      "budgetopt_balanced": 9.36,
+      "premium": 9.05,
+      "cheapest": 7.3
+    },
+    "extraction": {
+      "n": 20,
+      "budgetopt_balanced": 9.95,
+      "premium": 9.2,
+      "cheapest": 9.55
+    },
+    "reasoning_math": {
+      "n": 20,
+      "budgetopt_balanced": 6.0,
+      "premium": 7.0,
+      "cheapest": 6.0
+    },
+    "simple_qa": {
+      "n": 20,
+      "budgetopt_balanced": 10.0,
+      "premium": 8.7,
+      "cheapest": 9.45
+    },
+    "summarization": {
+      "n": 11,
+      "budgetopt_balanced": 9.82,
+      "premium": 9.18,
+      "cheapest": 9.45
+    },
+    "translation": {
+      "n": 20,
+      "budgetopt_balanced": 9.15,
+      "premium": 9.15,
+      "cheapest": 9.45
+    }
+  },
+  "budgetopt_meta": {
+    "presets": {
+      "cost_saver": 0,
+      "quality_first": 10,
+      "balanced": 22
+    },
+    "notes": [
+      "reasoning_math:high: no model reaches quality 8.0; relaxed to best available (7.5)"
+    ],
+    "unprofiled_models": [],
+    "class_counts": {
+      "translation:low": 21,
+      "coding:medium": 15,
+      "analysis:medium": 18,
+      "extraction:medium": 15,
+      "summarization:medium": 1,
+      "summarization:low": 6,
+      "creative_writing:low": 22,
+      "extraction:low": 6,
+      "simple_qa:medium": 11,
+      "simple_qa:high": 9,
+      "simple_qa:low": 2,
+      "coding:high": 1,
+      "coding:low": 3,
+      "reasoning_math:high": 13,
+      "reasoning_math:medium": 7,
+      "analysis:high": 1
+    }
+  }
+}

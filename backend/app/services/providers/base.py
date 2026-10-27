@@ -6,6 +6,7 @@ Provider-specific HTTP errors are mapped onto a small error hierarchy so the
 fallback executor can decide whether trying another model makes sense.
 """
 
+import re
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -49,7 +50,12 @@ class ProviderTimeout(ProviderError):
 
 
 class RateLimited(ProviderError):
-    """429 / quota exhausted."""
+    """429 / quota exhausted. `retry_after_s` is the provider's suggested wait, if given."""
+
+    def __init__(self, provider: str, message: str, status_code: int | None = None,
+                 retry_after_s: float | None = None):
+        super().__init__(provider, message, status_code)
+        self.retry_after_s = retry_after_s
 
 
 class ProviderUnavailable(ProviderError):
@@ -68,10 +74,23 @@ class MissingCredentials(AuthenticationFailed):
     pass
 
 
-def error_from_status(provider: str, status: int, body: str) -> ProviderError:
+def _retry_after(headers, body: str) -> float | None:
+    """Seconds to wait, from a Retry-After header or Gemini's RetryInfo in the body."""
+    value = (headers or {}).get("retry-after")
+    if value:
+        try:
+            return float(value)
+        except ValueError:
+            pass
+    m = re.search(r'"retryDelay":\s*"(\d+(?:\.\d+)?)s"', body)
+    return float(m.group(1)) if m else None
+
+
+def error_from_status(provider: str, status: int, body: str, headers=None) -> ProviderError:
     snippet = body[:300]
     if status == 429:
-        return RateLimited(provider, f"rate limited: {snippet}", status)
+        return RateLimited(provider, f"rate limited: {snippet}", status,
+                           retry_after_s=_retry_after(headers, body))
     if status in (401, 403):
         return AuthenticationFailed(provider, f"authentication failed: {snippet}", status)
     if status >= 500:
@@ -117,7 +136,7 @@ class ProviderAdapter(ABC):
         latency_ms = (time.perf_counter() - start) * 1000
 
         if resp.status_code != 200:
-            raise error_from_status(self.name, resp.status_code, resp.text)
+            raise error_from_status(self.name, resp.status_code, resp.text, resp.headers)
         try:
             return self.parse_response(resp.json(), latency_ms)
         except (KeyError, IndexError, TypeError, ValueError) as e:

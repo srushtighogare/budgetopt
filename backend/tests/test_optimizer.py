@@ -276,3 +276,12 @@ async def test_infeasible_budget_is_explained(client, admin_headers, db):
         "monthly_requests": 1_000_000, "budget": 0.5, "pop_size": 20, "generations": 10})).json()
     assert r["presets"]["cost_saver"]["feasible"] is False
     assert any("cannot cover 1,000,000 requests" in n for n in r["notes"])
+
+
+def test_cost_accounts_for_model_verbosity():
+    c = WorkloadClass("coding", "low", 1.0, 100, 1000)
+    terse = profile(0, "terse", 0.1, 1.0, 9.0)
+    chatty = ModelProfile(1, "chatty", "chatty", 0.1, 0.6, 131_072, 0, {t: 9.0 for t in TASKS},
+                          frozenset(), {t: 1000.0 for t in TASKS}, verbosity={"coding": 2.0})
+    # cheaper per token, but writes twice as much: 100*0.1 + 2000*0.6 > 100*0.1 + 1000*1.0
+    assert chatty.cost(c) > terse.cost(c)

@@ -60,8 +60,9 @@ from app.services.workload.analyzer import analyze  # noqa: E402
 BENCH = ROOT / "datasets" / "benchmark"
 EVAL = ROOT / "eval"
 MODELS = ["openai/gpt-oss-20b", "gemini-3.5-flash-lite", "openai/gpt-oss-120b",
-          "gemini-3.5-flash"]
-PREMIUM = "gemini-3.5-flash"
+          "qwen/qwen3.8-27b"]
+PREMIUM = "qwen/qwen3.8-27b"  # most expensive model free tiers can serve at benchmark volume
+JUDGES = {"gemma-4-26b-a4b-it", "gold-answer"}
 PRICES = {name: (float(p_in), float(p_out)) for _, name, _, _, _, p_in, p_out in SEED_MODELS}
 MONTHLY_REQUESTS = 100_000
 
@@ -94,7 +95,7 @@ def load() -> tuple[list[dict], dict[tuple[str, str], dict]]:
 
     prompts = read("prompts")
     answers = {(a["bid"], a["model"]): a for a in read("answers")}
-    scores = {(s["bid"], s["model"]): s for s in read("scores")}
+    scores = {(s["bid"], s["model"]): s for s in read("scores") if s["judge"] in JUDGES}
     cell = {}
     for (bid, model), a in answers.items():
         if (bid, model) in scores:
@@ -273,7 +274,7 @@ def plot(results, curve, cheap, premium) -> None:
     ax.set_title("Cost vs quality on held-out benchmark prompts", color="#0b0b0b")
     ax.scatter([], [], marker="D", color="#eb6834", label="Single model (no routing)")
     ax.scatter([], [], marker="s", color="#1baf7a", label="Other strategies")
-    ax.legend(fontsize=8, loc="lower right", frameon=False)
+    ax.legend(fontsize=8, loc="upper right", frameon=True, framealpha=0.9, edgecolor="#e1e0d9")
     fig.tight_layout()
     fig.savefig(EVAL / "benchmark_cost_quality.png", dpi=150)
 
@@ -299,6 +300,12 @@ evaluation, as in RouterBench / RouteLLM). Costs use current list prices, projec
 
 BudgetOpt's allocation policies were optimised from **profiling data only**; the benchmark
 answers were never used to build them. Quality floors per complexity band: {DEFAULT_Q_MIN}.
+
+**Premium baseline.** Google's stronger models (Gemini 3.5 Flash, Gemini 3 Flash preview) allow
+only 20 free requests a day, too few for this matrix, so the premium baseline is the most
+expensive model free tiers can serve at this volume ({PREMIUM}). The price spread between the
+cheapest and the premium benchmark model is therefore about 4×; with commercial premium models
+(≈20× and more) the same routing decisions would save correspondingly more.
 
 | Strategy | Quality | Kept vs premium | Monthly cost | Saved vs premium | vs random mix | p95 |
 |---|---|---|---|---|---|---|

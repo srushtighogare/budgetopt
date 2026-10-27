@@ -74,10 +74,12 @@ def warm_up() -> None:
         _load(name)
 
 
-def band_of(score: float) -> ComplexityBand:
-    if score <= LOW_MAX:
+def band_of(score: float, thresholds: tuple[float, float] = (LOW_MAX, MEDIUM_MAX)
+            ) -> ComplexityBand:
+    low_max, medium_max = thresholds
+    if score <= low_max:
         return ComplexityBand.LOW
-    return ComplexityBand.MEDIUM if score <= MEDIUM_MAX else ComplexityBand.HIGH
+    return ComplexityBand.MEDIUM if score <= medium_max else ComplexityBand.HIGH
 
 
 def _task_onehot(task: str) -> np.ndarray:
@@ -126,8 +128,11 @@ def analyze(messages: list[ChatMessage]) -> WorkloadProfile:
 
     x = model_input(text, task)
     cx = _load("complexity")
+    thresholds = (LOW_MAX, MEDIUM_MAX)
     if cx:
         complexity = float(cx["model"].predict_proba(x)[0, 1])
+        # the trained model ships band cut-offs measured on its own predictions
+        thresholds = tuple(cx.get("band_thresholds", thresholds))
         sources["complexity"] = "model"
     else:
         complexity = _heuristic_complexity(x[0], task)
@@ -145,7 +150,7 @@ def analyze(messages: list[ChatMessage]) -> WorkloadProfile:
 
     return WorkloadProfile(
         task_type=TaskType(task), task_confidence=round(conf, 3), task_alternatives=alts,
-        complexity=round(complexity, 3), complexity_band=band_of(complexity),
+        complexity=round(complexity, 3), complexity_band=band_of(complexity, thresholds),
         est_input_tokens=est_in, est_output_tokens=est_out,
         analysis_ms=round((time.perf_counter() - t0) * 1000, 2), sources=sources,
     )

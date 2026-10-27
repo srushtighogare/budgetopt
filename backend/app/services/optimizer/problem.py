@@ -31,6 +31,7 @@ from app.db.models import (
     LLMModel,
     ModelPerformance,
     PrivacyTier,
+    ProfilingResult,
     Request,
     RequestStatus,
     TaskType,
@@ -72,9 +73,14 @@ class ModelProfile:
     quality: dict[str, float]          # task -> 0..10 (measured or estimated)
     quality_estimated: frozenset[str]  # tasks whose quality is the model's mean, not measured
     latency_p95: dict[str, float]      # task -> ms
+    # task -> this model's typical answer length relative to the average model (from the
+    # profiling set, where every model answers the same prompts). Reasoning models emit far
+    # more output tokens, so price per token alone misjudges what a request really costs.
+    verbosity: dict[str, float] = field(default_factory=dict)
 
     def cost(self, c: WorkloadClass) -> float:
-        return (c.in_tokens * self.input_per_1m + c.out_tokens * self.output_per_1m) / 1e6
+        out = c.out_tokens * self.verbosity.get(c.task, 1.0)
+        return (c.in_tokens * self.input_per_1m + out * self.output_per_1m) / 1e6
 
 
 @dataclass
@@ -163,6 +169,7 @@ async def _model_profiles(db: AsyncSession) -> list[ModelProfile]:
         select(LLMModel).options(selectinload(LLMModel.pricing), selectinload(LLMModel.provider))
         .where(LLMModel.is_active).order_by(LLMModel.id))).all()
     perf = list(await db.scalars(select(ModelPerformance)))
+    verbosity = await _verbosity(db)
     out = []
     for m in models:
         if not m.provider.is_active:
@@ -186,8 +193,34 @@ async def _model_profiles(db: AsyncSession) -> list[ModelProfile]:
             model_id=m.id, name=m.name, display_name=m.display_name,
             input_per_1m=float(price.input_per_1m), output_per_1m=float(price.output_per_1m),
             context_window=m.context_window, privacy_rank=_PRIVACY_RANK[m.max_privacy_tier],
-            quality=quality, quality_estimated=frozenset(estimated), latency_p95=latency))
+            quality=quality, quality_estimated=frozenset(estimated), latency_p95=latency,
+            verbosity=verbosity.get(m.id, {})))
     return out
+
+
+async def _verbosity(db: AsyncSession) -> dict[int, dict[str, float]]:
+    """Median output tokens per (model, task) on the profiling set, relative to the median
+    across models for that task; a model's overall ratio fills tasks it lacks."""
+    rows = (await db.execute(
+        select(ProfilingResult.model_id, ProfilingResult.task_type,
+               func.percentile_cont(0.5).within_group(ProfilingResult.output_tokens))
+        .where(ProfilingResult.output_tokens.is_not(None), ProfilingResult.output_tokens > 0)
+        .group_by(ProfilingResult.model_id, ProfilingResult.task_type))).all()
+    by_task: dict[str, dict[int, float]] = {}
+    for mid, task, med in rows:
+        by_task.setdefault(task.value, {})[mid] = float(med)
+    ratios: dict[int, dict[str, float]] = {}
+    for task, meds in by_task.items():
+        if len(meds) < 2:
+            continue
+        ref = median(meds.values())
+        for mid, med in meds.items():
+            ratios.setdefault(mid, {})[task] = med / ref
+    for r in ratios.values():
+        overall = median(r.values())
+        for t in TASKS:
+            r.setdefault(t, overall)
+    return ratios
 
 
 async def _workload_classes(db: AsyncSession, team: Team | None,

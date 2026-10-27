@@ -1,6 +1,6 @@
 # BudgetOpt — evaluation
 
-Generated 2026-10-26 by `ml/build_report.py` from the metric files in `ml/eval/`.
+Generated 2026-10-27 by `ml/build_report.py` from the metric files in `ml/eval/`.
 All LLM-based labelling, profiling and benchmarking used free-tier API quotas; every label
 records which model produced it.
 
@@ -30,9 +30,32 @@ Details: [`ml/eval/classifier_report.md`](../ml/eval/classifier_report.md).
 
 ## 2. Workload analysis: complexity and output tokens
 
-Complexity model and output-token estimator: the labelling run that produces their training data (cheap-model answer + strong reference + judge per prompt) is still collecting on free-tier quotas; until then the router uses the transparent fallbacks (a feature-based complexity heuristic and per-task median output lengths), and each routing explanation says so.
+Trained on 361 prompts from the labelling run (5-fold cross-validation).
 
-_Not produced yet. Run `make train-workload` (complexity model and token estimator)._
+Complexity = probability that the cheap model's answer is not good enough
+(cheap-model failure rate in the data: 0.186).
+
+| Model | ROC-AUC | Brier |
+|---|---|---|
+| task prior baseline | 0.6634 | 0.1436 |
+| hist gradient boosting | 0.6449 | 0.1537 |
+| logistic regression | 0.6629 | 0.1459 |
+
+Output-token estimator (target: tokens billed by the cheap model):
+
+| Model | MAE (tokens) |
+|---|---|
+| task median baseline | 276.9 |
+| hist gradient boosting | 203.2 |
+| ridge | 209.1 |
+
+**Reading the results.** The token estimator is clearly useful: about 27% lower error than
+per-task medians. The complexity model is not yet better than knowing the task type alone
+(ROC-AUC ≈ the task-prior baseline): with 361 labelled prompts, the extra prompt features
+add little. It is still used because it gives each request a calibrated probability. The
+complexity bands are cut at the 50th and 85th percentiles of its predictions
+(`[0.1657, 0.3245]`), so the quality floors always separate the riskiest requests.
+More labelled data, especially for coding, math and analysis, is the way to improve it.
 
 ## 3. Model profiling
 
@@ -60,7 +83,47 @@ range) and near zero at generous ones. Details: [`ml/eval/optimizer_report.md`](
 
 ## 5. End-to-end routing benchmark
 
-_Not produced yet. Run `python -I ml/benchmark_collect.py && python -I ml/benchmark_eval.py` (routing benchmark on held-out prompts)._
+151 held-out prompts × 4 models (response matrix; every answer
+scored once by gold answer or an external judge). Costs projected to
+100,000 requests a month at current list prices. BudgetOpt's policies were
+built from profiling data only, never from benchmark answers.
+
+| Strategy | Quality (0–10) | Kept vs premium | Monthly cost | Saved vs premium | vs random mix |
+|---|---|---|---|---|---|
+| all → openai/gpt-oss-20b | 8.53 | 94% | $15.52 | 32% | -1.03 |
+| all → gemini-3.5-flash-lite | 9.77 | 108% | $12.65 | 44% | +0.00 |
+| all → openai/gpt-oss-120b | 8.91 | 99% | $30.25 | -33% | -0.12 |
+| all → qwen/qwen3.8-27b | 9.03 | 100% | $22.72 | 0% | +0.00 |
+| random | 9.06 | 100% | $20.28 | 11% | -0.15 |
+| keyword router (old prototype) | 8.61 | 95% | $16.21 | 29% | -0.90 |
+| oracle (hindsight) | 9.82 | 109% | $11.56 | 49% | +0.05 |
+| BudgetOpt cheapest-eligible (no policy) | 9.21 | 102% | $13.32 | 41% | -0.51 |
+| BudgetOpt cost_saver | 9.21 | 102% | $13.32 | 41% | -0.51 |
+| BudgetOpt quality_first | 9.28 | 103% | $12.86 | 43% | -0.47 |
+| BudgetOpt balanced | 9.18 | 102% | $14.05 | 38% | -0.49 |
+
+![cost vs quality](../ml/eval/benchmark_cost_quality.png)
+
+**Reading the results.**
+
+- *Premium baseline.* Google's stronger Gemini models allow only 20 free requests a day, so
+  the premium baseline is qwen/qwen3.8-27b, the most expensive model free tiers can serve at
+  this volume. The price spread between the four models is therefore small (about 4×);
+  against commercial premium models (≈20× and more) the same routing saves correspondingly more.
+- *A finding the benchmark produced.* The first run priced requests by price per token only.
+  The benchmark showed that GPT-OSS 20B, the cheapest per token, is a reasoning model that
+  writes about 2× more output tokens than the others, so it was not actually the cheapest per
+  request. The optimizer now scales each model's output by its measured answer length per
+  task (from the profiling set, not the benchmark). On the same matrix this moved the
+  balanced policy from quality 8.67 at $14.53/month to the figures above.
+- *Not yet optimal.* On these prompts one model (Gemini 3.5 Flash-Lite) was both the cheapest
+  and the best, which is unusual. BudgetOpt's profiles, from only 4 prompts per task type,
+  rated GPT-OSS 20B about as highly, so the policies still send it some traffic. Larger
+  profiling sets are the main lever for closing the remaining gap to the best single model and
+  the hindsight oracle. Because the cheapest model was also the best here, the "vs random mix"
+  column is not informative for this run.
+
+Details and per-task results: [`ml/eval/benchmark_report.md`](../ml/eval/benchmark_report.md).
 
 ## 6. Spend forecasting
 

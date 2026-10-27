@@ -23,14 +23,14 @@ Further documentation:
 | 1 | Foundation: FastAPI, PostgreSQL schema + Alembic, JWT auth, RBAC, teams, API keys, model and versioned pricing registry, audit log, CI | **Done** |
 | 2 | Provider adapters (Groq, Gemini, OpenAI, Anthropic), fallback executor, circuit breaker | **Done** |
 | 3 | OpenAI-compatible gateway, request and decision logging, exact cache, rate limits, PII redaction | **Done** |
-| 4 | Workload analysis ML: task classifier, complexity model, token estimator | Classifier done; complexity & token models training on labelled data |
+| 4 | Workload analysis ML: task classifier (0.62 on independent prompts vs 0.72 annotator agreement), complexity model, output-token estimator (27% lower error) | **Done** |
 | 5 | Model profiling: per-task quality via LLM judge + gold answers, latency percentiles | **Done** (profiles filling on free tiers) |
 | 6 | Optimizer: NSGA-II multi-objective allocation, exact ILP/LP, allocation policies used by the router | **Done** |
 | 7 | Spend forecasting (ETS, calibrated intervals), budget and overrun alerts, anomaly detection | **Done** |
 | 8 | What-if simulator (replay history under other allocations, prices, volumes), savings and economic-feasibility report | **Done** |
 | 9 | Semantic cache: local embeddings + pgvector, LLM-verified grey zone (precision 1.0, recall 96% on near-miss pairs) | **Done** |
 | 10 | React dashboard: overview, playground, request log, forecast, alerts, optimization (Pareto front, apply policies), what-if, models & quality heatmap, teams/budgets/API keys | **Done** |
-| 11 | Benchmark and evaluation: response-matrix routing benchmark, optimizer vs exact optimum, forecaster, semantic cache, overhead load test, consolidated report | **In progress** (benchmark collecting on free tiers) |
+| 11 | Evaluation: held-out routing benchmark (BudgetOpt 43% cheaper than premium at 103% of its quality), optimizer vs exact optimum, forecaster, semantic cache, overhead load test, report in docs/evaluation.md | **Done** |
 
 ## Models
 
