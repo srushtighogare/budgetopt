@@ -16,6 +16,17 @@ from app.services.providers.base import ChatMessage, Completion, InvalidRequest,
 from app.services.providers.registry import AdapterFactory, build_adapter
 from app.services.routing.breaker import CircuitBreaker, default_breaker
 
+# Reasoning models bill hidden "thinking" against the same output limit as the answer,
+# so a small max_tokens can be spent entirely on thinking and return no text. These get
+# extra room so that max_tokens limits the visible answer, as callers expect.
+REASONING_PREFIXES = ("openai/gpt-oss", "qwen/qwen3", "gemini-2.5", "gemini-3")
+REASONING_HEADROOM = 2048
+
+
+def output_budget(model: LLMModel, max_tokens: int) -> int:
+    budget = max_tokens + (REASONING_HEADROOM if model.name.startswith(REASONING_PREFIXES) else 0)
+    return min(budget, model.max_output_tokens)
+
 
 @dataclass(frozen=True)
 class Attempt:
@@ -72,7 +83,7 @@ async def execute_with_fallback(
         try:
             adapter = adapter_factory(model.provider)
             completion = await adapter.generate(
-                model.name, messages, max_tokens=min(max_tokens, model.max_output_tokens),
+                model.name, messages, max_tokens=output_budget(model, max_tokens),
                 temperature=temperature, timeout=timeout,
             )
         except ProviderError as e:
@@ -86,9 +97,17 @@ async def execute_with_fallback(
 
         breaker.record_success(model.id)
         pricing = await price_at(db, model.id)
+        # `cost` is everything billed for this request, including wasted attempts
+        result.cost += compute_cost(pricing, completion.input_tokens, completion.output_tokens)
+        if not completion.text.strip():
+            # Billed, but nothing to show (e.g. the whole budget went to reasoning)
+            result.attempts.append(Attempt(
+                **base, outcome="error", error_type="EmptyCompletion",
+                error=f"no visible answer (finish_reason={completion.finish_reason})",
+                latency_ms=completion.latency_ms))
+            continue
         result.completion = completion
         result.model = model
-        result.cost = compute_cost(pricing, completion.input_tokens, completion.output_tokens)
         result.attempts.append(Attempt(**base, outcome="success", latency_ms=completion.latency_ms))
         return result
 

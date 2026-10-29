@@ -2,6 +2,7 @@
 
 import json
 from decimal import Decimal
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -22,7 +23,11 @@ from app.services.providers.base import (
     RateLimited,
 )
 from app.services.routing.breaker import CircuitBreaker
-from app.services.routing.executor import execute_with_fallback
+from app.services.routing.executor import (
+    REASONING_HEADROOM,
+    execute_with_fallback,
+    output_budget,
+)
 
 MSGS = [ChatMessage("system", "Be brief."), ChatMessage("user", "Hi")]
 
@@ -246,6 +251,28 @@ async def test_open_circuit_skips_model_and_invalid_request_does_not_trip(db):
     await execute_with_fallback(db, cands[1:], MSGS, breaker=breaker,
                                 adapter_factory=lambda p: fake)
     assert not breaker.is_open(cands[1].id)
+
+
+async def test_empty_answer_falls_back_and_is_still_billed(db):
+    # A reasoning model that spends the whole budget thinking returns no text
+    cands = await _models(db, "openai/gpt-oss-120b", "gemini-3.1-flash-lite")
+    empty = Completion("", input_tokens=1000, output_tokens=500, latency_ms=90.0,
+                       finish_reason="length")
+    fake = FakeAdapter({"openai/gpt-oss-120b": empty, "gemini-3.1-flash-lite": OK})
+    res = await execute_with_fallback(db, cands, MSGS, breaker=CircuitBreaker(),
+                                      adapter_factory=lambda p: fake)
+    assert res.succeeded and res.fallback_used
+    assert res.model.name == "gemini-3.1-flash-lite"
+    assert res.attempts[0].error_type == "EmptyCompletion"
+    assert res.cost > Decimal("0.00045000")  # the empty attempt's tokens are included
+
+
+async def test_reasoning_models_get_thinking_headroom(db):
+    oss, qwen = await _models(db, "openai/gpt-oss-20b", "qwen/qwen3.8-27b")
+    assert output_budget(oss, 512) == min(512 + REASONING_HEADROOM, oss.max_output_tokens)
+    assert output_budget(qwen, 10**6) == qwen.max_output_tokens
+    plain = SimpleNamespace(name="some-plain-model", max_output_tokens=8192)
+    assert output_budget(plain, 512) == 512
 
 
 async def test_inactive_provider_skipped(db):

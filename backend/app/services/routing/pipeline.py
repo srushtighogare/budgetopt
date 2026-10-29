@@ -262,7 +262,8 @@ async def handle(
         why = (f"{profile.describe()} All eligible models failed ({failed}). "
                f"Strategy: {plan.strategy}.")
         rid = await _log(db, req, status=RequestStatus.FAILED, budget_state=state,
-                         explanation=why, plan=plan, attempts=attempts, profile=profile)
+                         explanation=why, plan=plan, attempts=attempts, profile=profile,
+                         cost=res.cost)  # attempts that returned no answer are still billed
         return GatewayResult(RequestStatus.FAILED, rid, why, state, attempts=attempts,
                              workload=workload)
 
