@@ -5,6 +5,7 @@ import { useState } from "react";
 import { api } from "../api/client";
 import { useModels } from "../api/queries";
 import type { RouteResult } from "../api/types";
+import { Markdown } from "../components/Markdown";
 import { useTeam } from "../components/TeamContext";
 import {
   Badge,
@@ -113,9 +114,8 @@ export default function PlaygroundPage() {
                 <Stat label="Latency" value={ms(r.latency_ms)} />
               </div>
               <Card title="Answer" action={<Badge tone={statusTone(r.status)}>{titleCase(r.status)}</Badge>}>
-                <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
-                  {r.text ?? <span className="text-slate-500">No answer (see explanation).</span>}
-                </div>
+                {r.text ? <Markdown>{r.text}</Markdown>
+                  : <p className="text-sm text-slate-500">No answer (see explanation).</p>}
                 <p className="mt-3 text-xs text-slate-400">{num(r.input_tokens)} input · {num(r.output_tokens)} output tokens · request #{r.request_id}</p>
               </Card>
               <Card title="Why this model">
